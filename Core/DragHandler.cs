@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using WinMove.Native;
 
 namespace WinMove.Core;
@@ -11,13 +12,17 @@ public sealed class DragHandler : IDisposable
     private readonly WindowManipulator _manipulator;
     private readonly KeyboardHook _keyboardHook;
     private readonly System.Windows.Forms.Timer _pollTimer;
+    private readonly System.Windows.Forms.Timer _deferredSnapTimer;
 
     private DragMode _mode = DragMode.None;
     private IntPtr _targetHwnd = IntPtr.Zero;
     private POINT _dragStartCursor;
     private RECT _dragStartWindowRect;
+    private POINT _lastPolledCursor; // Updated every poll tick — used for edge snap detection
+    private int _pollCount;
 
     public bool IsDragging => _mode != DragMode.None;
+    public bool EdgeSnappingEnabled { get; set; } = true;
 
     /// <summary>
     /// Creates a DragHandler with an externally-owned KeyboardHook.
@@ -31,6 +36,9 @@ public sealed class DragHandler : IDisposable
 
         _pollTimer = new System.Windows.Forms.Timer { Interval = 16 }; // ~60fps
         _pollTimer.Tick += OnPollTick;
+
+        _deferredSnapTimer = new System.Windows.Forms.Timer { Interval = 1 }; // fires on next message loop iteration
+        _deferredSnapTimer.Tick += OnDeferredSnap;
     }
 
     public void StartMoveDrag(IntPtr hwnd)
@@ -52,6 +60,7 @@ public sealed class DragHandler : IDisposable
 
         _targetHwnd = hwnd;
         _mode = DragMode.Move;
+        _pollCount = 0;
         _pollTimer.Start();
     }
 
@@ -93,6 +102,10 @@ public sealed class DragHandler : IDisposable
         if (_mode == DragMode.None) return;
 
         NativeMethods.GetCursorPos(out POINT currentCursor);
+        _lastPolledCursor = currentCursor;
+        _pollCount++;
+        if (_pollCount % 10 == 0) // Log every 10th tick (~6fps)
+            DebugLog($"poll #{_pollCount}: cursor=({currentCursor.X},{currentCursor.Y})");
         int deltaX = currentCursor.X - _dragStartCursor.X;
         int deltaY = currentCursor.Y - _dragStartCursor.Y;
 
@@ -125,8 +138,37 @@ public sealed class DragHandler : IDisposable
     public void EndDrag()
     {
         _pollTimer.Stop();
+
+        NativeMethods.GetCursorPos(out POINT cursorNow);
+        DebugLog($"EndDrag: mode={_mode} edgeSnap={EdgeSnappingEnabled} hwnd=0x{_targetHwnd:X} pollCount={_pollCount} lastPolled=({_lastPolledCursor.X},{_lastPolledCursor.Y}) cursorNow=({cursorNow.X},{cursorNow.Y})");
+
+        // Capture state before resetting — we need it for the deferred snap.
+        bool shouldSnap = _mode == DragMode.Move && EdgeSnappingEnabled && _targetHwnd != IntPtr.Zero;
+        IntPtr snapHwnd = _targetHwnd;
+
         _mode = DragMode.None;
         _targetHwnd = IntPtr.Zero;
+
+        if (shouldSnap)
+        {
+            // Use the last cursor position from the 60fps poll loop — this is the most
+            // recent position while the drag was actively running.
+            POINT cursor = _lastPolledCursor;
+            DebugLog($"EdgeSnap: cursor=({cursor.X},{cursor.Y})");
+
+            // SendInput cannot be called from inside a low-level keyboard hook callback:
+            // it causes re-entrancy and risks the ~300ms hook timeout (Windows silently
+            // kills the hook after repeated timeouts). Post to the message loop instead.
+            _deferredSnapTimer.Tag = (snapHwnd, cursor);
+            _deferredSnapTimer.Start();
+        }
+    }
+
+    private void OnDeferredSnap(object? sender, EventArgs e)
+    {
+        _deferredSnapTimer.Stop();
+        var (hwnd, cursor) = ((IntPtr, POINT))_deferredSnapTimer.Tag!;
+        EdgeSnapHelper.TrySnap(hwnd, cursor);
     }
 
     private void ApplyResize(int deltaX, int deltaY)
@@ -165,10 +207,21 @@ public sealed class DragHandler : IDisposable
             newWidth, newHeight);
     }
 
+    private static readonly string DebugLogPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "win-move", "edge-snap-debug.log");
+    private static void DebugLog(string msg)
+    {
+        try { File.AppendAllText(DebugLogPath, $"{DateTime.Now:HH:mm:ss.fff} [Drag] {msg}\n"); }
+        catch { }
+    }
+
     public void Dispose()
     {
         _pollTimer.Stop();
         _pollTimer.Dispose();
+        _deferredSnapTimer.Stop();
+        _deferredSnapTimer.Dispose();
         // Don't dispose _keyboardHook — lifecycle is managed by TrayApplicationContext
         _keyboardHook.KeyStateChanged -= OnKeyStateChanged;
     }

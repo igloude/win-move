@@ -39,3 +39,26 @@ public struct KBDLLHOOKSTRUCT
     public uint time;
     public IntPtr dwExtraInfo;
 }
+
+[StructLayout(LayoutKind.Sequential)]
+public struct KEYBDINPUT
+{
+    public ushort wVk;
+    public ushort wScan;
+    public uint dwFlags;
+    public uint time;
+    public IntPtr dwExtraInfo;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct InputUnion
+{
+    [FieldOffset(0)] public KEYBDINPUT ki;
+}
+
+[StructLayout(LayoutKind.Explicit, Size = 40)]
+public struct INPUT
+{
+    [FieldOffset(0)] public uint type;
+    [FieldOffset(8)] public InputUnion u;  // Offset 8 for x64 alignment (Win32 union follows DWORD type + 4 bytes padding)
+}

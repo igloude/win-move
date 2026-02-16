@@ -48,4 +48,17 @@ public static class NativeConstants
     // Monitor
     public const uint MONITOR_DEFAULTTONEAREST = 2;
     public const int MDT_EFFECTIVE_DPI = 0;
+
+    // SendInput
+    public const uint INPUT_KEYBOARD = 1;
+    public const uint KEYEVENTF_KEYUP = 0x0002;
+
+    // Virtual key codes for edge snap
+    public const ushort VK_LWIN = 0x5B;
+    public const ushort VK_SHIFT = 0x10;
+    public const ushort VK_CONTROL = 0x11;
+    public const ushort VK_MENU = 0x12;
+    public const ushort VK_LEFT = 0x25;
+    public const ushort VK_UP = 0x26;
+    public const ushort VK_RIGHT = 0x27;
 }

@@ -3,6 +3,7 @@ namespace WinMove.Config;
 public sealed class AppConfig
 {
     public int Version { get; set; } = 1;
+    public bool EdgeSnappingEnabled { get; set; } = true;
     public Dictionary<string, HotkeyBinding> Hotkeys { get; set; } = new();
 }
 

@@ -31,6 +31,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _modifierSession.ActionTriggered += OnModifierSessionAction;
 
         _dragHandler = new DragHandler(_manipulator, _keyboardHook);
+        _dragHandler.EdgeSnappingEnabled = _configManager.CurrentConfig.EdgeSnappingEnabled;
         _hotkeyManager = new HotkeyManager(_configManager, OnHotkeyAction);
 
         // Wire keyboard hook to modifier session
@@ -136,6 +137,8 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         // Rebuild modifier session lookup with new config
         _modifierSession.BuildLookup(newConfig);
+
+        _dragHandler.EdgeSnappingEnabled = newConfig.EdgeSnappingEnabled;
 
         _trayIcon.ShowBalloonTip(2000, "win-move", "Configuration reloaded", ToolTipIcon.Info);
     }

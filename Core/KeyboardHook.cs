@@ -40,6 +40,10 @@ public sealed class KeyboardHook : IDisposable
 
             if (isDown || isUp)
             {
+                // Skip synthetic keystrokes injected by our own SendInput calls
+                if (hookStruct.dwExtraInfo == EdgeSnapHelper.Signature)
+                    return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
+
                 KeyStateChanged?.Invoke(hookStruct.vkCode, isDown);
             }
         }

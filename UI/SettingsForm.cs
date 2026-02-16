@@ -9,6 +9,7 @@ public sealed class SettingsForm : Form
     private readonly DataGridView _grid;
     private readonly Button _saveButton;
     private readonly Button _resetButton;
+    private readonly CheckBox _edgeSnapCheckbox;
 
     // Hotkey capture state
     private int _capturingRowIndex = -1;
@@ -109,7 +110,21 @@ public sealed class SettingsForm : Form
         buttonPanel.Controls.Add(_resetButton);
         buttonPanel.Controls.Add(configMenuButton);
 
+        _edgeSnapCheckbox = new CheckBox
+        {
+            Text = "Enable edge snapping during move drag",
+            AutoSize = true
+        };
+        var optionsPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 30,
+            Padding = new Padding(8, 4, 0, 0)
+        };
+        optionsPanel.Controls.Add(_edgeSnapCheckbox);
+
         Controls.Add(_grid);
+        Controls.Add(optionsPanel);
         Controls.Add(buttonPanel);
 
         LoadConfig();
@@ -119,6 +134,7 @@ public sealed class SettingsForm : Form
     {
         _grid.Rows.Clear();
         var config = _configManager.CurrentConfig;
+        _edgeSnapCheckbox.Checked = config.EdgeSnappingEnabled;
 
         foreach (var (key, binding) in config.Hotkeys)
         {
@@ -234,7 +250,11 @@ public sealed class SettingsForm : Form
 
     private void OnSave(object? sender, EventArgs e)
     {
-        var config = new AppConfig { Version = 1 };
+        var config = new AppConfig
+        {
+            Version = 1,
+            EdgeSnappingEnabled = _edgeSnapCheckbox.Checked
+        };
 
         foreach (DataGridViewRow row in _grid.Rows)
         {
