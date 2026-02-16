@@ -5,8 +5,8 @@ namespace WinMove.Core;
 
 /// <summary>
 /// Tracks snap cycling state. Repeated snap presses in the same direction
-/// cycle through widths: 2/3 → 1/2 → 1/3. Changing direction or window
-/// resets the cycle.
+/// cycle through widths: 2/3 → 1/2 → 1/3 → 2/3 → ... Changing direction
+/// or window resets the cycle.
 /// </summary>
 public sealed class SnapCycleTracker
 {
@@ -30,8 +30,8 @@ public sealed class SnapCycleTracker
         }
         else
         {
-            // Same window + same direction — advance cycle (cap at last entry)
-            _cycleIndex = Math.Min(_cycleIndex + 1, WidthFractions.Length - 1);
+            // Same window + same direction — advance cycle (wrap around)
+            _cycleIndex = (_cycleIndex + 1) % WidthFractions.Length;
         }
 
         // Restore if maximized before snapping
