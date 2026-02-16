@@ -107,4 +107,48 @@ public static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetShellWindow();
+
+    // Shell_NotifyIcon
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
+
+    // Window class and creation
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern ushort RegisterClass(ref WNDCLASS lpWndClass);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr CreateWindowEx(uint dwExStyle, string lpClassName,
+        string lpWindowName, uint dwStyle, int x, int y, int nWidth, int nHeight,
+        IntPtr hWndParent, IntPtr hMenu, IntPtr hInstance, IntPtr lpParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool DestroyWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    // Icon loading
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr LoadImage(IntPtr hInstance, string lpszName,
+        uint uType, int cxDesired, int cyDesired, uint fuLoad);
+
+    [DllImport("user32.dll")]
+    public static extern bool DestroyIcon(IntPtr hIcon);
+
+    // Popup menu
+    [DllImport("user32.dll")]
+    public static extern IntPtr CreatePopupMenu();
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern bool AppendMenu(IntPtr hMenu, uint uFlags, nuint uIDNewItem, string? lpNewItem);
+
+    [DllImport("user32.dll")]
+    public static extern int TrackPopupMenu(IntPtr hMenu, uint uFlags, int x, int y,
+        int nReserved, IntPtr hWnd, IntPtr prcRect);
+
+    [DllImport("user32.dll")]
+    public static extern bool DestroyMenu(IntPtr hMenu);
+
+    [DllImport("user32.dll")]
+    public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 }

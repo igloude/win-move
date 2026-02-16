@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using Microsoft.UI.Dispatching;
 using WinMove.Native;
 
 namespace WinMove.Core;
@@ -11,8 +11,8 @@ public sealed class DragHandler : IDisposable
 
     private readonly WindowManipulator _manipulator;
     private readonly KeyboardHook _keyboardHook;
-    private readonly System.Windows.Forms.Timer _pollTimer;
-    private readonly System.Windows.Forms.Timer _deferredSnapTimer;
+    private readonly DispatcherQueueTimer _pollTimer;
+    private readonly DispatcherQueueTimer _deferredSnapTimer;
 
     private DragMode _mode = DragMode.None;
     private IntPtr _targetHwnd = IntPtr.Zero;
@@ -21,23 +21,27 @@ public sealed class DragHandler : IDisposable
     private POINT _lastPolledCursor; // Updated every poll tick — used for edge snap detection
     private int _pollCount;
 
+    // Deferred snap data (replaces Timer.Tag which doesn't exist on DispatcherQueueTimer)
+    private IntPtr _pendingSnapHwnd;
+    private POINT _pendingSnapCursor;
+
     public bool IsDragging => _mode != DragMode.None;
     public bool EdgeSnappingEnabled { get; set; } = true;
 
-    /// <summary>
-    /// Creates a DragHandler with an externally-owned KeyboardHook.
-    /// The hook's lifecycle is managed by the caller (TrayApplicationContext).
-    /// </summary>
-    public DragHandler(WindowManipulator manipulator, KeyboardHook keyboardHook)
+    public DragHandler(WindowManipulator manipulator, KeyboardHook keyboardHook, DispatcherQueue dispatcherQueue)
     {
         _manipulator = manipulator;
         _keyboardHook = keyboardHook;
         _keyboardHook.KeyStateChanged += OnKeyStateChanged;
 
-        _pollTimer = new System.Windows.Forms.Timer { Interval = 16 }; // ~60fps
+        _pollTimer = dispatcherQueue.CreateTimer();
+        _pollTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60fps
+        _pollTimer.IsRepeating = true;
         _pollTimer.Tick += OnPollTick;
 
-        _deferredSnapTimer = new System.Windows.Forms.Timer { Interval = 1 }; // fires on next message loop iteration
+        _deferredSnapTimer = dispatcherQueue.CreateTimer();
+        _deferredSnapTimer.Interval = TimeSpan.FromMilliseconds(1); // fires on next message loop iteration
+        _deferredSnapTimer.IsRepeating = false;
         _deferredSnapTimer.Tick += OnDeferredSnap;
     }
 
@@ -97,7 +101,7 @@ public sealed class DragHandler : IDisposable
         _mode = newMode;
     }
 
-    private void OnPollTick(object? sender, EventArgs e)
+    private void OnPollTick(DispatcherQueueTimer sender, object args)
     {
         if (_mode == DragMode.None) return;
 
@@ -159,16 +163,15 @@ public sealed class DragHandler : IDisposable
             // SendInput cannot be called from inside a low-level keyboard hook callback:
             // it causes re-entrancy and risks the ~300ms hook timeout (Windows silently
             // kills the hook after repeated timeouts). Post to the message loop instead.
-            _deferredSnapTimer.Tag = (snapHwnd, cursor);
+            _pendingSnapHwnd = snapHwnd;
+            _pendingSnapCursor = cursor;
             _deferredSnapTimer.Start();
         }
     }
 
-    private void OnDeferredSnap(object? sender, EventArgs e)
+    private void OnDeferredSnap(DispatcherQueueTimer sender, object args)
     {
-        _deferredSnapTimer.Stop();
-        var (hwnd, cursor) = ((IntPtr, POINT))_deferredSnapTimer.Tag!;
-        EdgeSnapHelper.TrySnap(hwnd, cursor);
+        EdgeSnapHelper.TrySnap(_pendingSnapHwnd, _pendingSnapCursor);
     }
 
     private void ApplyResize(int deltaX, int deltaY)
@@ -219,10 +222,8 @@ public sealed class DragHandler : IDisposable
     public void Dispose()
     {
         _pollTimer.Stop();
-        _pollTimer.Dispose();
         _deferredSnapTimer.Stop();
-        _deferredSnapTimer.Dispose();
-        // Don't dispose _keyboardHook — lifecycle is managed by TrayApplicationContext
+        // Don't dispose _keyboardHook — lifecycle is managed by App
         _keyboardHook.KeyStateChanged -= OnKeyStateChanged;
     }
 }

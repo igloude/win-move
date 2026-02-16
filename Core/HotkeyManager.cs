@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using WinMove.Config;
 using WinMove.Native;
 
@@ -66,30 +67,52 @@ public sealed class HotkeyManager : IDisposable
     public void Dispose()
     {
         UnregisterAll();
-        _messageWindow.DestroyHandle();
+        _messageWindow.Dispose();
     }
 
-    private sealed class HiddenMessageWindow : NativeWindow
+    private sealed class HiddenMessageWindow : IDisposable
     {
         private readonly Action<int, IntPtr> _hotkeyCallback;
+        private readonly WndProc _wndProcDelegate; // prevent GC
+        private IntPtr _hwnd;
+
+        public IntPtr Handle => _hwnd;
 
         public HiddenMessageWindow(Action<int, IntPtr> hotkeyCallback)
         {
             _hotkeyCallback = hotkeyCallback;
-            var cp = new CreateParams
+            _wndProcDelegate = WndProcCallback;
+
+            var hInstance = NativeMethods.GetModuleHandle(null);
+            var wc = new WNDCLASS
             {
-                Parent = new IntPtr(-3) // HWND_MESSAGE — message-only window
+                lpfnWndProc = _wndProcDelegate,
+                lpszClassName = "WinMove_HotkeyMsgWnd",
+                hInstance = hInstance
             };
-            CreateHandle(cp);
+            NativeMethods.RegisterClass(ref wc);
+
+            _hwnd = NativeMethods.CreateWindowEx(
+                0, wc.lpszClassName, "", 0,
+                0, 0, 0, 0,
+                NativeConstants.HWND_MESSAGE,
+                IntPtr.Zero, hInstance, IntPtr.Zero);
         }
 
-        protected override void WndProc(ref Message m)
+        private IntPtr WndProcCallback(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
         {
-            if (m.Msg == NativeConstants.WM_HOTKEY)
+            if (msg == (uint)NativeConstants.WM_HOTKEY)
+                _hotkeyCallback(wParam.ToInt32(), lParam);
+            return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
+        }
+
+        public void Dispose()
+        {
+            if (_hwnd != IntPtr.Zero)
             {
-                _hotkeyCallback(m.WParam.ToInt32(), m.LParam);
+                NativeMethods.DestroyWindow(_hwnd);
+                _hwnd = IntPtr.Zero;
             }
-            base.WndProc(ref m);
         }
     }
 }

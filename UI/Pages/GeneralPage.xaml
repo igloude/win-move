@@ -1,0 +1,19 @@
+<Page
+    x:Class="WinMove.UI.Pages.GeneralPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Padding="24" Spacing="16">
+        <TextBlock Text="General" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,4" />
+
+        <ToggleSwitch x:Name="EdgeSnapToggle" Header="Edge snapping during move drag"
+                      Toggled="OnEdgeSnapToggled" />
+
+        <TextBlock Text="Config"
+                   Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,16,0,4" />
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Open Config Folder" Click="OnOpenConfigFolder" />
+            <Button Content="Reload Config" Click="OnReloadConfig" />
+        </StackPanel>
+    </StackPanel>
+</Page>

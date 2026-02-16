@@ -1,12 +1,14 @@
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using WinMove.Config;
 using WinMove.Core;
+using WinMove.Helpers;
 using WinMove.UI;
 
 namespace WinMove;
 
-public sealed class TrayApplicationContext : ApplicationContext
+public partial class App : Application
 {
-    private readonly NotifyIcon _trayIcon;
     private readonly ConfigManager _configManager;
     private readonly HotkeyManager _hotkeyManager;
     private readonly WindowManipulator _manipulator;
@@ -15,55 +17,90 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly ModifierSession _modifierSession;
     private readonly DragHandler _dragHandler;
     private readonly SnapCycleTracker _snapTracker = new();
-    private SettingsForm? _settingsForm;
+    private readonly TrayIconManager _trayIcon;
+    private readonly DispatcherQueue _dispatcherQueue;
 
-    public TrayApplicationContext()
+    private MainWindow? _mainWindow;
+
+    public KeyboardHook KeyboardHook => _keyboardHook;
+
+    public App()
     {
+        this.InitializeComponent();
+
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
         _configManager = new ConfigManager();
         _manipulator = new WindowManipulator();
         _windowDetector = new WindowDetector();
 
-        // KeyboardHook is owned here and shared between DragHandler and ModifierSession
         _keyboardHook = new KeyboardHook();
 
         _modifierSession = new ModifierSession();
         _modifierSession.BuildLookup(_configManager.CurrentConfig);
         _modifierSession.ActionTriggered += OnModifierSessionAction;
 
-        _dragHandler = new DragHandler(_manipulator, _keyboardHook);
+        _dragHandler = new DragHandler(_manipulator, _keyboardHook, _dispatcherQueue);
         _dragHandler.EdgeSnappingEnabled = _configManager.CurrentConfig.EdgeSnappingEnabled;
         _hotkeyManager = new HotkeyManager(_configManager, OnHotkeyAction);
 
-        // Wire keyboard hook to modifier session
         _keyboardHook.KeyStateChanged += _modifierSession.OnKeyStateChanged;
         _keyboardHook.Install();
 
         _configManager.ConfigChanged += OnConfigChanged;
 
-        _trayIcon = CreateTrayIcon();
-        _hotkeyManager.RegisterAll();
+        _trayIcon = new TrayIconManager(
+            onShowSettings: ShowMainWindow,
+            onShowAbout: ShowAbout,
+            onExit: ExitApplication);
     }
 
-    /// <summary>
-    /// Called by HotkeyManager when a registered WM_HOTKEY fires (first combo press).
-    /// </summary>
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        _hotkeyManager.RegisterAll();
+        _trayIcon.Show();
+        // App starts tray-only — no window on launch
+    }
+
+    private void ShowMainWindow()
+    {
+        if (_mainWindow == null || _mainWindow.IsClosed)
+        {
+            _mainWindow = new MainWindow(_configManager);
+            _mainWindow.Closed += (s, e) => _mainWindow = null;
+        }
+
+        _mainWindow.Activate();
+    }
+
+    private void ShowAbout()
+    {
+        ShowMainWindow();
+        _mainWindow?.NavigateToAbout();
+    }
+
+    private void ExitApplication()
+    {
+        _hotkeyManager.UnregisterAll();
+        _dragHandler.Dispose();
+        _hotkeyManager.Dispose();
+        _keyboardHook.Dispose();
+        _configManager.Dispose();
+        _trayIcon.Dispose();
+
+        Exit();
+    }
+
     private void OnHotkeyAction(ActionType action, uint modFlags, uint vk)
     {
-        // Seed the modifier session so subsequent key switches are detected
         _modifierSession.OnHotkeyFired(modFlags, vk);
 
-        // If ModifierSession already fired ActionTriggered for this same
-        // keypress (hook runs synchronously before WM_HOTKEY is posted),
-        // skip DispatchAction to avoid double-fire (e.g. snap cycle advancing twice).
         if (_modifierSession.ConsumeIfFired())
             return;
 
         DispatchAction(action);
     }
 
-    /// <summary>
-    /// Called by ModifierSession when a key switch is detected while modifiers are held.
-    /// </summary>
     private void OnModifierSessionAction(ActionType action)
     {
         DispatchAction(action);
@@ -71,14 +108,12 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void DispatchAction(ActionType action)
     {
-        // If dragging, only allow switching between drag modes
         if (_dragHandler.IsDragging)
         {
             if (action is ActionType.MoveDrag or ActionType.ResizeDrag)
             {
-                // DragHandler handles the seamless switch internally
                 if (action == ActionType.MoveDrag)
-                    _dragHandler.StartMoveDrag(IntPtr.Zero); // hwnd ignored during switch
+                    _dragHandler.StartMoveDrag(IntPtr.Zero);
                 else
                     _dragHandler.StartResizeDrag(IntPtr.Zero);
             }
@@ -88,7 +123,6 @@ public sealed class TrayApplicationContext : ApplicationContext
         var hwnd = _windowDetector.GetWindowUnderCursor();
         if (hwnd == IntPtr.Zero) return;
 
-        // Reset snap cycle on non-snap actions
         if (action is not (ActionType.SnapLeft or ActionType.SnapRight))
         {
             _snapTracker.Reset();
@@ -129,96 +163,19 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void OnConfigChanged(AppConfig newConfig)
     {
-        if (_trayIcon.ContextMenuStrip?.InvokeRequired == true)
+        // Marshal to UI thread if needed
+        if (!_dispatcherQueue.HasThreadAccess)
         {
-            _trayIcon.ContextMenuStrip.BeginInvoke(() => OnConfigChanged(newConfig));
+            _dispatcherQueue.TryEnqueue(() => OnConfigChanged(newConfig));
             return;
         }
 
         _hotkeyManager.UnregisterAll();
         _hotkeyManager.RegisterAll();
 
-        // Rebuild modifier session lookup with new config
         _modifierSession.BuildLookup(newConfig);
-
         _dragHandler.EdgeSnappingEnabled = newConfig.EdgeSnappingEnabled;
 
-        _trayIcon.ShowBalloonTip(2000, "win-move", "Configuration reloaded", ToolTipIcon.Info);
-    }
-
-    private NotifyIcon CreateTrayIcon()
-    {
-        var contextMenu = new ContextMenuStrip();
-
-        contextMenu.Items.Add("Settings", null, (s, e) => ShowSettings());
-        contextMenu.Items.Add("About", null, (s, e) =>
-        {
-            MessageBox.Show("win-move v1.0\nWindow management utility\n\nAll actions target the window under the mouse cursor.",
-                "About win-move", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        });
-        contextMenu.Items.Add("Exit", null, (s, e) => ExitApplication());
-
-        var icon = new NotifyIcon
-        {
-            Icon = LoadIcon(),
-            Text = "win-move",
-            Visible = true,
-            ContextMenuStrip = contextMenu
-        };
-
-        icon.DoubleClick += (s, e) => ShowSettings();
-
-        return icon;
-    }
-
-    private void ShowSettings()
-    {
-        if (_settingsForm != null && !_settingsForm.IsDisposed)
-        {
-            _settingsForm.Show();
-            _settingsForm.BringToFront();
-            _settingsForm.Activate();
-            return;
-        }
-
-        _settingsForm = new SettingsForm(_configManager);
-        _settingsForm.Show();
-    }
-
-    private static Icon LoadIcon()
-    {
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "Resources", "app.ico");
-        if (File.Exists(iconPath))
-            return new Icon(iconPath);
-
-        return SystemIcons.Application;
-    }
-
-    private void ExitApplication()
-    {
-        _hotkeyManager.UnregisterAll();
-        _dragHandler.Dispose();
-        _hotkeyManager.Dispose();
-        _keyboardHook.Dispose();
-        _configManager.Dispose();
-
-        _trayIcon.Visible = false;
-        _trayIcon.Dispose();
-
-        Application.Exit();
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _trayIcon.Visible = false;
-            _trayIcon.Dispose();
-            _hotkeyManager.Dispose();
-            _dragHandler.Dispose();
-            _keyboardHook.Dispose();
-            _configManager.Dispose();
-        }
-        base.Dispose(disposing);
+        _trayIcon.ShowNotification("win-move", "Configuration reloaded");
     }
 }

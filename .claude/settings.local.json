@@ -4,7 +4,9 @@
       "Bash(dotnet:*)",
       "Bash(dotnet-script -e:*)",
       "Bash(powershell:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git checkout:*)"
     ]
   }
 }

@@ -62,3 +62,43 @@ public struct INPUT
     [FieldOffset(0)] public uint type;
     [FieldOffset(8)] public InputUnion u;  // Offset 8 for x64 alignment (Win32 union follows DWORD type + 4 bytes padding)
 }
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct NOTIFYICONDATA
+{
+    public uint cbSize;
+    public IntPtr hWnd;
+    public uint uID;
+    public uint uFlags;
+    public uint uCallbackMessage;
+    public IntPtr hIcon;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+    public string szTip;
+    public uint dwState;
+    public uint dwStateMask;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+    public string szInfo;
+    public uint uVersion; // union with uTimeout
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+    public string szInfoTitle;
+    public uint dwInfoFlags;
+    public Guid guidItem;
+    public IntPtr hBalloonIcon;
+}
+
+public delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct WNDCLASS
+{
+    public uint style;
+    public WndProc lpfnWndProc;
+    public int cbClsExtra;
+    public int cbWndExtra;
+    public IntPtr hInstance;
+    public IntPtr hIcon;
+    public IntPtr hCursor;
+    public IntPtr hBrush;
+    public string? lpszMenuName;
+    public string lpszClassName;
+}

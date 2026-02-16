@@ -151,6 +151,71 @@ public sealed class ConfigManager : IDisposable
     }
 
     // Parsing helpers used by HotkeyManager
+
+    // Virtual key code map — decoupled from any UI framework enum.
+    // Keys match the names produced by WinForms Keys.ToString() for config compatibility.
+    private static readonly Dictionary<string, uint> VirtualKeyMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Letters
+        ["A"] = 0x41, ["B"] = 0x42, ["C"] = 0x43, ["D"] = 0x44, ["E"] = 0x45,
+        ["F"] = 0x46, ["G"] = 0x47, ["H"] = 0x48, ["I"] = 0x49, ["J"] = 0x4A,
+        ["K"] = 0x4B, ["L"] = 0x4C, ["M"] = 0x4D, ["N"] = 0x4E, ["O"] = 0x4F,
+        ["P"] = 0x50, ["Q"] = 0x51, ["R"] = 0x52, ["S"] = 0x53, ["T"] = 0x54,
+        ["U"] = 0x55, ["V"] = 0x56, ["W"] = 0x57, ["X"] = 0x58, ["Y"] = 0x59,
+        ["Z"] = 0x5A,
+
+        // Numbers (top row)
+        ["D0"] = 0x30, ["D1"] = 0x31, ["D2"] = 0x32, ["D3"] = 0x33, ["D4"] = 0x34,
+        ["D5"] = 0x35, ["D6"] = 0x36, ["D7"] = 0x37, ["D8"] = 0x38, ["D9"] = 0x39,
+
+        // Function keys
+        ["F1"] = 0x70, ["F2"] = 0x71, ["F3"] = 0x72, ["F4"] = 0x73,
+        ["F5"] = 0x74, ["F6"] = 0x75, ["F7"] = 0x76, ["F8"] = 0x77,
+        ["F9"] = 0x78, ["F10"] = 0x79, ["F11"] = 0x7A, ["F12"] = 0x7B,
+
+        // Arrow keys
+        ["Left"] = 0x25, ["Up"] = 0x26, ["Right"] = 0x27, ["Down"] = 0x28,
+
+        // Common keys
+        ["Space"] = 0x20, ["Tab"] = 0x09, ["Escape"] = 0x1B, ["Enter"] = 0x0D,
+        ["Return"] = 0x0D, ["Back"] = 0x08, ["Delete"] = 0x2E, ["Insert"] = 0x2D,
+        ["Home"] = 0x24, ["End"] = 0x23, ["PageUp"] = 0x21, ["PageDown"] = 0x22, ["Prior"] = 0x21, ["Next"] = 0x22,
+
+        // OEM keys (WinForms naming convention)
+        ["Oemplus"] = 0xBB,    // =+
+        ["OemMinus"] = 0xBD,   // -_
+        ["OemPeriod"] = 0xBE,  // .>
+        ["Oemcomma"] = 0xBC,   // ,<
+        ["Oem1"] = 0xBA,       // ;:
+        ["Oem2"] = 0xBF,       // /?
+        ["Oem3"] = 0xC0,       // `~
+        ["Oem4"] = 0xDB,       // [{
+        ["Oem5"] = 0xDC,       // \|
+        ["Oem6"] = 0xDD,       // ]}
+        ["Oem7"] = 0xDE,       // '"
+        ["OemBackslash"] = 0xE2, // \| (102-key layout)
+
+        // Numpad
+        ["NumPad0"] = 0x60, ["NumPad1"] = 0x61, ["NumPad2"] = 0x62, ["NumPad3"] = 0x63,
+        ["NumPad4"] = 0x64, ["NumPad5"] = 0x65, ["NumPad6"] = 0x66, ["NumPad7"] = 0x67,
+        ["NumPad8"] = 0x68, ["NumPad9"] = 0x69,
+        ["Multiply"] = 0x6A, ["Add"] = 0x6B, ["Subtract"] = 0x6D,
+        ["Decimal"] = 0x6E, ["Divide"] = 0x6F,
+    };
+
+    // Reverse map for displaying VK code as key name
+    private static readonly Dictionary<uint, string> VkToNameMap;
+
+    static ConfigManager()
+    {
+        VkToNameMap = new Dictionary<uint, string>();
+        foreach (var (name, vk) in VirtualKeyMap)
+        {
+            // First mapping wins (prefer canonical name)
+            VkToNameMap.TryAdd(vk, name);
+        }
+    }
+
     public static bool TryParseModifiers(List<string> modifiers, out uint result)
     {
         result = 0;
@@ -171,13 +236,12 @@ public sealed class ConfigManager : IDisposable
 
     public static bool TryParseKey(string keyName, out uint vk)
     {
-        vk = 0;
-        if (Enum.TryParse<Keys>(keyName, ignoreCase: true, out var key))
-        {
-            vk = (uint)key;
-            return true;
-        }
-        return false;
+        return VirtualKeyMap.TryGetValue(keyName, out vk);
+    }
+
+    public static string VkToKeyName(uint vk)
+    {
+        return VkToNameMap.TryGetValue(vk, out var name) ? name : $"0x{vk:X2}";
     }
 
     public static bool TryParseAction(string actionName, out ActionType actionType)

@@ -8,6 +8,8 @@ public static class NativeConstants
     public const int WM_KEYUP = 0x0101;
     public const int WM_SYSKEYDOWN = 0x0104;
     public const int WM_SYSKEYUP = 0x0105;
+    public const int WM_DESTROY = 0x0002;
+    public const int WM_COMMAND = 0x0111;
 
     // Hotkey Modifiers
     public const uint MOD_ALT = 0x0001;
@@ -28,6 +30,7 @@ public static class NativeConstants
     // SetWindowPos Z-order
     public static readonly IntPtr HWND_TOPMOST = new(-1);
     public static readonly IntPtr HWND_NOTOPMOST = new(-2);
+    public static readonly IntPtr HWND_MESSAGE = new(-3);
 
     // ShowWindow commands
     public const int SW_MINIMIZE = 6;
@@ -61,4 +64,37 @@ public static class NativeConstants
     public const ushort VK_LEFT = 0x25;
     public const ushort VK_UP = 0x26;
     public const ushort VK_RIGHT = 0x27;
+
+    // Shell_NotifyIcon
+    public const int NIM_ADD = 0x00000000;
+    public const int NIM_MODIFY = 0x00000001;
+    public const int NIM_DELETE = 0x00000002;
+    public const int NIM_SETVERSION = 0x00000004;
+    public const int NIF_MESSAGE = 0x00000001;
+    public const int NIF_ICON = 0x00000002;
+    public const int NIF_TIP = 0x00000004;
+    public const int NIF_INFO = 0x00000010;
+    public const int NOTIFYICON_VERSION_4 = 4;
+
+    // Tray icon callback message
+    public const int WM_APP = 0x8000;
+    public const int WM_TRAYICON = WM_APP + 1;
+
+    // Mouse messages (for tray callback lParam)
+    public const int WM_LBUTTONDBLCLK = 0x0203;
+    public const int WM_RBUTTONUP = 0x0205;
+
+    // TrackPopupMenu flags
+    public const uint TPM_LEFTALIGN = 0x0000;
+    public const uint TPM_BOTTOMALIGN = 0x0020;
+    public const uint TPM_RETURNCMD = 0x0100;
+
+    // LoadImage
+    public const uint IMAGE_ICON = 1;
+    public const uint LR_LOADFROMFILE = 0x00000010;
+    public const uint LR_DEFAULTSIZE = 0x00000040;
+
+    // Menu flags
+    public const uint MF_STRING = 0x00000000;
+    public const uint MF_SEPARATOR = 0x00000800;
 }

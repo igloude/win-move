@@ -2,15 +2,40 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <UseWinUI>true</UseWinUI>
     <AssemblyName>WinMove</AssemblyName>
     <RootNamespace>WinMove</RootNamespace>
-    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- Unpackaged deployment -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+
+    <!-- Required for .NET 8 with Windows App SDK -->
+    <UseRidGraph>true</UseRidGraph>
+
+    <!-- SDK version compatibility workaround -->
+    <WindowsSdkPackageVersion>10.0.19041.38</WindowsSdkPackageVersion>
+
+    <!-- Disable auto-generated Program.Main from App.xaml (we provide our own) -->
+    <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+
+    <!-- Required for dotnet CLI builds without Visual Studio -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+
+    <!-- WinUI 3 requires explicit platform -->
+    <Platforms>x64;arm64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.*" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.*" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Resources\app.ico">

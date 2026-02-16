@@ -3,15 +3,22 @@ namespace WinMove;
 static class Program
 {
     [STAThread]
-    static void Main()
+    static void Main(string[] args)
     {
         using var mutex = new Mutex(true, @"Global\WinMove_SingleInstance", out bool createdNew);
         if (!createdNew)
             return; // Another instance is already running
 
-        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new TrayApplicationContext());
+        // For self-contained unpackaged apps, the Windows App SDK auto-initializes.
+        // No Bootstrap.Initialize() call needed.
+
+        Microsoft.UI.Xaml.Application.Start((p) =>
+        {
+            var context = new Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(
+                Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+
+            new App();
+        });
     }
 }
