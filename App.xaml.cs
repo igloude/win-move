@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using WinMove.Config;
 using WinMove.Core;
 using WinMove.Helpers;
+using WinMove.Licensing;
 using WinMove.UI;
 
 namespace WinMove;
@@ -10,6 +11,7 @@ namespace WinMove;
 public partial class App : Application
 {
     private readonly ConfigManager _configManager;
+    private readonly LicenseManager _licenseManager;
     private readonly HotkeyManager _hotkeyManager;
     private readonly WindowManipulator _manipulator;
     private readonly WindowDetector _windowDetector;
@@ -32,6 +34,9 @@ public partial class App : Application
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         _configManager = new ConfigManager();
+        _licenseManager = new LicenseManager();
+        _licenseManager.Initialize();
+
         _manipulator = new WindowManipulator();
         _windowDetector = new WindowDetector();
 
@@ -68,13 +73,22 @@ public partial class App : Application
 
         _hotkeyManager.RegisterAll();
         _trayIcon.Show();
+
+        // Best-effort license refresh (fire-and-forget)
+        _ = TryRefreshLicenseAsync();
+    }
+
+    private async Task TryRefreshLicenseAsync()
+    {
+        try { await _licenseManager.TryRefreshAsync(); }
+        catch { /* silently ignore */ }
     }
 
     private void ShowMainWindow()
     {
         if (_mainWindow == null || _mainWindow.IsClosed)
         {
-            _mainWindow = new MainWindow(_configManager);
+            _mainWindow = new MainWindow(_configManager, _licenseManager);
             _mainWindow.Closed += (s, e) => _mainWindow = null;
         }
 
@@ -118,6 +132,13 @@ public partial class App : Application
 
     private void DispatchAction(ActionType action)
     {
+        if (!_licenseManager.IsActionAllowed(action))
+        {
+            _trayIcon.ShowNotification("win-move",
+                $"{ConfigManager.GetFriendlyActionName(action)} requires a Pro license.");
+            return;
+        }
+
         if (_dragHandler.IsDragging)
         {
             if (action is ActionType.MoveDrag or ActionType.ResizeDrag)

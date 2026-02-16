@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using WinMove.Config;
 using WinMove.Helpers;
+using WinMove.UI;
 
 namespace WinMove.UI.Pages;
 
@@ -19,7 +20,8 @@ public sealed partial class GeneralPage : Page
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        _configManager = e.Parameter as ConfigManager;
+        var ctx = e.Parameter as NavigationContext;
+        _configManager = ctx?.Config;
         LoadSettings();
     }
 

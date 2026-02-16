@@ -10,16 +10,25 @@
                     <Grid ColumnSpacing="12" Padding="4,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{Binding FriendlyName}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding ShortcutDisplay}" Grid.Column="1"
+                        <Border Grid.Column="1" CornerRadius="4" Padding="6,2"
+                                Visibility="{Binding ProBadgeVisibility}"
+                                Background="#3B82F6">
+                            <TextBlock Text="PRO" FontSize="10" FontWeight="SemiBold"
+                                       Foreground="White" />
+                        </Border>
+                        <TextBlock Text="{Binding ShortcutDisplay}" Grid.Column="2"
                                    VerticalAlignment="Center" FontFamily="Consolas"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <Button Content="Change" Grid.Column="2" Click="OnChangeClick" Tag="{Binding}" />
-                        <Button Content="Clear" Grid.Column="3" Click="OnClearClick" Tag="{Binding}" />
+                        <Button Content="Change" Grid.Column="3" Click="OnChangeClick" Tag="{Binding}"
+                                IsEnabled="{Binding IsChangeEnabled}" />
+                        <Button Content="Clear" Grid.Column="4" Click="OnClearClick" Tag="{Binding}"
+                                IsEnabled="{Binding IsChangeEnabled}" />
                     </Grid>
                 </DataTemplate>
             </local:HotkeyListTemplateSelector.HotkeyTemplate>

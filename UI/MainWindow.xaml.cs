@@ -1,18 +1,23 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinMove.Config;
+using WinMove.Licensing;
 
 namespace WinMove.UI;
+
+public record NavigationContext(ConfigManager Config, LicenseManager License);
 
 public sealed partial class MainWindow : Window
 {
     private readonly ConfigManager _configManager;
+    private readonly LicenseManager _licenseManager;
 
     public bool IsClosed { get; private set; }
 
-    public MainWindow(ConfigManager configManager)
+    public MainWindow(ConfigManager configManager, LicenseManager licenseManager)
     {
         _configManager = configManager;
+        _licenseManager = licenseManager;
         this.InitializeComponent();
 
         // Set window size
@@ -26,7 +31,7 @@ public sealed partial class MainWindow : Window
 
         // Navigate to default page
         NavView.SelectedItem = NavView.MenuItems[0];
-        ContentFrame.Navigate(typeof(Pages.HotkeysPage), _configManager);
+        ContentFrame.Navigate(typeof(Pages.HotkeysPage), new NavigationContext(_configManager, _licenseManager));
 
         this.Closed += (s, e) => IsClosed = true;
     }
@@ -40,11 +45,12 @@ public sealed partial class MainWindow : Window
             {
                 "HotkeysPage" => typeof(Pages.HotkeysPage),
                 "GeneralPage" => typeof(Pages.GeneralPage),
+                "LicensePage" => typeof(Pages.LicensePage),
                 "AboutPage" => typeof(Pages.AboutPage),
                 _ => null
             };
             if (pageType != null)
-                ContentFrame.Navigate(pageType, _configManager);
+                ContentFrame.Navigate(pageType, new NavigationContext(_configManager, _licenseManager));
         }
     }
 

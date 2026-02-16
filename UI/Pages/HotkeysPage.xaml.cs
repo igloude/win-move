@@ -5,12 +5,15 @@ using Microsoft.UI.Xaml.Navigation;
 using WinMove.Config;
 using WinMove.Core;
 using WinMove.Native;
+using WinMove.UI;
+using LicenseManager = WinMove.Licensing.LicenseManager;
 
 namespace WinMove.UI.Pages;
 
 public sealed partial class HotkeysPage : Page
 {
     private ConfigManager? _configManager;
+    private LicenseManager? _licenseManager;
     private List<HotkeyBindingViewModel> _bindings = new();
 
     public HotkeysPage()
@@ -20,7 +23,9 @@ public sealed partial class HotkeysPage : Page
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        _configManager = e.Parameter as ConfigManager;
+        var ctx = e.Parameter as NavigationContext;
+        _configManager = ctx?.Config;
+        _licenseManager = ctx?.License;
         LoadConfig();
     }
 
@@ -58,6 +63,7 @@ public sealed partial class HotkeysPage : Page
                 ConfigKey = entry,
                 ActionType = actionType,
                 FriendlyName = ConfigManager.GetFriendlyActionName(actionType),
+                IsProOnly = _licenseManager != null && !_licenseManager.IsActionAllowed(actionType),
                 Binding = new HotkeyBinding
                 {
                     Modifiers = new List<string>(binding.Modifiers),
@@ -82,6 +88,7 @@ public sealed partial class HotkeysPage : Page
                 ConfigKey = key,
                 ActionType = actionType,
                 FriendlyName = ConfigManager.GetFriendlyActionName(actionType),
+                IsProOnly = _licenseManager != null && !_licenseManager.IsActionAllowed(actionType),
                 Binding = new HotkeyBinding
                 {
                     Modifiers = new List<string>(binding.Modifiers),
@@ -101,6 +108,19 @@ public sealed partial class HotkeysPage : Page
     {
         var button = (Button)sender;
         var vm = (HotkeyBindingViewModel)button.Tag;
+
+        if (vm.IsProOnly)
+        {
+            var proDialog = new ContentDialog
+            {
+                Title = "Pro License Required",
+                Content = $"{vm.FriendlyName} is available with a Pro license.\nGo to Settings \u2192 License to activate.",
+                CloseButtonText = "OK",
+                XamlRoot = this.XamlRoot
+            };
+            await proDialog.ShowAsync();
+            return;
+        }
 
         var capturedModifiers = new HashSet<uint>();
         uint capturedPrimaryKey = 0;
@@ -277,6 +297,10 @@ public class HotkeyBindingViewModel : INotifyPropertyChanged
     public ActionType ActionType { get; set; }
     public string FriendlyName { get; set; } = "";
     public HotkeyBinding Binding { get; set; } = new();
+    public bool IsProOnly { get; set; }
+
+    public bool IsChangeEnabled => !IsProOnly;
+    public Visibility ProBadgeVisibility => IsProOnly ? Visibility.Visible : Visibility.Collapsed;
 
     public string ShortcutDisplay
     {
