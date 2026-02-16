@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using WinMove.Config;
+using WinMove.Helpers;
 
 namespace WinMove.UI.Pages;
 
@@ -27,8 +28,15 @@ public sealed partial class GeneralPage : Page
         if (_configManager == null) return;
 
         _loading = true;
+        StartupToggle.IsOn = StartupHelper.IsEnabled;
         EdgeSnapToggle.IsOn = _configManager.CurrentConfig.EdgeSnappingEnabled;
         _loading = false;
+    }
+
+    private void OnStartupToggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        StartupHelper.SetEnabled(StartupToggle.IsOn);
     }
 
     private void OnEdgeSnapToggled(object sender, RoutedEventArgs e)

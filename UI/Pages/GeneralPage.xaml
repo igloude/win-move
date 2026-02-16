@@ -5,6 +5,9 @@
     <StackPanel Padding="24" Spacing="16">
         <TextBlock Text="General" Style="{StaticResource TitleTextBlockStyle}" Margin="0,0,0,4" />
 
+        <ToggleSwitch x:Name="StartupToggle" Header="Start with Windows"
+                      Toggled="OnStartupToggled" />
+
         <ToggleSwitch x:Name="EdgeSnapToggle" Header="Edge snapping during move drag"
                       Toggled="OnEdgeSnapToggled" />
 

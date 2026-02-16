@@ -21,6 +21,7 @@ public partial class App : Application
     private readonly DispatcherQueue _dispatcherQueue;
 
     private MainWindow? _mainWindow;
+    private Window? _lifetimeWindow; // Hidden window to keep WinUI alive while tray icon runs
 
     public KeyboardHook KeyboardHook => _keyboardHook;
 
@@ -57,9 +58,16 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // Create a hidden window to keep WinUI alive when the settings window is closed.
+        // Without this, WinUI exits when the last visible window closes.
+        _lifetimeWindow = new Window { Title = "" };
+        var presenter = _lifetimeWindow.AppWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
+        presenter?.SetBorderAndTitleBar(false, false);
+        _lifetimeWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32(0, 0));
+        _lifetimeWindow.AppWindow.Move(new Windows.Graphics.PointInt32(-32000, -32000));
+
         _hotkeyManager.RegisterAll();
         _trayIcon.Show();
-        // App starts tray-only — no window on launch
     }
 
     private void ShowMainWindow()
@@ -88,6 +96,8 @@ public partial class App : Application
         _configManager.Dispose();
         _trayIcon.Dispose();
 
+        _mainWindow?.Close();
+        _lifetimeWindow?.Close();
         Exit();
     }
 
