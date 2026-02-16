@@ -10,5 +10,6 @@ public enum ActionType
     OpacityUp,
     OpacityDown,
     SnapLeft,
-    SnapRight
+    SnapRight,
+    ToggleMinimize
 }

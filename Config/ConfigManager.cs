@@ -118,6 +118,7 @@ public sealed class ConfigManager : IDisposable
                 ["opacity_down"] = new() { Modifiers = ["Win", "Shift"], Key = "OemMinus", Action = "OpacityDown" },
                 ["snap_left"] = new() { Modifiers = ["Win", "Shift"], Key = "Left", Action = "SnapLeft" },
                 ["snap_right"] = new() { Modifiers = ["Win", "Shift"], Key = "Right", Action = "SnapRight" },
+                ["toggle_minimize"] = new() { Modifiers = ["Win", "Shift"], Key = "M", Action = "ToggleMinimize" },
             }
         };
     }
@@ -197,6 +198,7 @@ public sealed class ConfigManager : IDisposable
             ActionType.OpacityDown => "Decrease Opacity",
             ActionType.SnapLeft => "Snap Left (cycle)",
             ActionType.SnapRight => "Snap Right (cycle)",
+            ActionType.ToggleMinimize => "Minimize / Restore",
             _ => action.ToString()
         };
     }

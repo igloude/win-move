@@ -26,6 +26,14 @@ public sealed class WindowManipulator
         NativeMethods.ShowWindow(hwnd, NativeConstants.SW_RESTORE);
     }
 
+    public void ToggleMinimize(IntPtr hwnd)
+    {
+        if (NativeMethods.IsIconic(hwnd))
+            NativeMethods.ShowWindow(hwnd, NativeConstants.SW_RESTORE);
+        else
+            NativeMethods.ShowWindow(hwnd, NativeConstants.SW_MINIMIZE);
+    }
+
     public void MoveWindow(IntPtr hwnd, int x, int y, int width, int height)
     {
         RestoreIfMaximized(hwnd);

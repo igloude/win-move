@@ -111,6 +111,9 @@ public sealed class TrayApplicationContext : ApplicationContext
             case ActionType.Restore:
                 _manipulator.Restore(hwnd);
                 break;
+            case ActionType.ToggleMinimize:
+                _manipulator.ToggleMinimize(hwnd);
+                break;
             case ActionType.OpacityUp:
                 _manipulator.AdjustOpacity(hwnd, increase: true);
                 break;
