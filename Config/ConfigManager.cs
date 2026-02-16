@@ -111,14 +111,14 @@ public sealed class ConfigManager : IDisposable
             {
                 ["move_drag"] = new() { Modifiers = ["Win", "Shift"], Key = "Z", Action = "MoveDrag" },
                 ["resize_drag"] = new() { Modifiers = ["Win", "Shift"], Key = "X", Action = "ResizeDrag" },
-                ["minimize"] = new() { Modifiers = ["Win", "Shift"], Key = "Down", Action = "Minimize" },
-                ["maximize"] = new() { Modifiers = ["Win", "Shift"], Key = "Up", Action = "Maximize" },
-                ["restore"] = new() { Modifiers = ["Win", "Shift"], Key = "R", Action = "Restore" },
-                ["opacity_up"] = new() { Modifiers = ["Win", "Shift"], Key = "Oemplus", Action = "OpacityUp" },
-                ["opacity_down"] = new() { Modifiers = ["Win", "Shift"], Key = "OemMinus", Action = "OpacityDown" },
                 ["snap_left"] = new() { Modifiers = ["Win", "Shift"], Key = "Left", Action = "SnapLeft" },
                 ["snap_right"] = new() { Modifiers = ["Win", "Shift"], Key = "Right", Action = "SnapRight" },
-                ["toggle_minimize"] = new() { Modifiers = ["Win", "Shift"], Key = "M", Action = "ToggleMinimize" },
+                ["minimize"] = new() { Modifiers = [], Key = "", Action = "Minimize" },
+                ["toggle_minimize"] = new() { Modifiers = ["Win", "Shift"], Key = "Down", Action = "ToggleMinimize" },
+                ["restore"] = new() { Modifiers = [], Key = "", Action = "Restore" },
+                ["maximize"] = new() { Modifiers = ["Win", "Shift"], Key = "Up", Action = "Maximize" },
+                ["opacity_up"] = new() { Modifiers = ["Win", "Shift"], Key = "Oemplus", Action = "OpacityUp" },
+                ["opacity_down"] = new() { Modifiers = ["Win", "Shift"], Key = "OemMinus", Action = "OpacityDown" },
             }
         };
     }
@@ -149,6 +149,18 @@ public sealed class ConfigManager : IDisposable
         _watcher?.Dispose();
         _debounceTimer?.Dispose();
     }
+
+    // Canonical display order with section breaks (null = divider)
+    public static readonly List<string?> DisplayOrder =
+    [
+        "move_drag", "resize_drag",
+        null,
+        "snap_left", "snap_right",
+        null,
+        "minimize", "toggle_minimize", "restore", "maximize",
+        null,
+        "opacity_up", "opacity_down",
+    ];
 
     // Parsing helpers used by HotkeyManager
 

@@ -24,19 +24,60 @@ public sealed partial class HotkeysPage : Page
         LoadConfig();
     }
 
+    private void MarkDirty()
+    {
+        SaveButton.IsEnabled = true;
+    }
+
     private void LoadConfig()
     {
         if (_configManager == null) return;
 
+        SaveButton.IsEnabled = false;
+
         _bindings.Clear();
         var config = _configManager.CurrentConfig;
 
-        foreach (var (key, binding) in config.Hotkeys)
+        // Build bindings in canonical display order
+        var items = new List<object>();
+        foreach (var entry in ConfigManager.DisplayOrder)
         {
+            if (entry == null)
+            {
+                items.Add(SeparatorMarker.Instance);
+                continue;
+            }
+
+            if (!config.Hotkeys.TryGetValue(entry, out var binding))
+                continue;
             if (!ConfigManager.TryParseAction(binding.Action, out var actionType))
                 continue;
 
-            _bindings.Add(new HotkeyBindingViewModel
+            var vm = new HotkeyBindingViewModel
+            {
+                ConfigKey = entry,
+                ActionType = actionType,
+                FriendlyName = ConfigManager.GetFriendlyActionName(actionType),
+                Binding = new HotkeyBinding
+                {
+                    Modifiers = new List<string>(binding.Modifiers),
+                    Key = binding.Key,
+                    Action = binding.Action
+                }
+            };
+            _bindings.Add(vm);
+            items.Add(vm);
+        }
+
+        // Append any keys not in DisplayOrder (future-proofing)
+        foreach (var (key, binding) in config.Hotkeys)
+        {
+            if (_bindings.Any(b => b.ConfigKey == key))
+                continue;
+            if (!ConfigManager.TryParseAction(binding.Action, out var actionType))
+                continue;
+
+            var vm = new HotkeyBindingViewModel
             {
                 ConfigKey = key,
                 ActionType = actionType,
@@ -47,11 +88,13 @@ public sealed partial class HotkeysPage : Page
                     Key = binding.Key,
                     Action = binding.Action
                 }
-            });
+            };
+            _bindings.Add(vm);
+            items.Add(vm);
         }
 
         HotkeyList.ItemsSource = null;
-        HotkeyList.ItemsSource = _bindings;
+        HotkeyList.ItemsSource = items;
     }
 
     private async void OnChangeClick(object sender, RoutedEventArgs e)
@@ -111,7 +154,11 @@ public sealed partial class HotkeysPage : Page
                 vm.Binding.Key = keyName;
                 vm.NotifyChanged();
 
-                DispatcherQueue.TryEnqueue(() => dialog.Hide());
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    MarkDirty();
+                    dialog.Hide();
+                });
             }
         }
 
@@ -135,6 +182,7 @@ public sealed partial class HotkeysPage : Page
         vm.Binding.Modifiers = new List<string>();
         vm.Binding.Key = "";
         vm.NotifyChanged();
+        MarkDirty();
     }
 
     private void OnSave(object sender, RoutedEventArgs e)
@@ -153,6 +201,7 @@ public sealed partial class HotkeysPage : Page
         }
 
         _configManager.Save(config);
+        SaveButton.IsEnabled = false;
     }
 
     private async void OnResetDefaults(object sender, RoutedEventArgs e)
@@ -199,6 +248,27 @@ public sealed partial class HotkeysPage : Page
         0x12 => "Alt",
         _ => $"0x{vk:X2}"
     };
+}
+
+public class SeparatorMarker
+{
+    public static readonly SeparatorMarker Instance = new();
+}
+
+public class HotkeyListTemplateSelector : DataTemplateSelector
+{
+    public DataTemplate? HotkeyTemplate { get; set; }
+    public DataTemplate? SeparatorTemplate { get; set; }
+
+    protected override DataTemplate SelectTemplateCore(object item)
+    {
+        return item is SeparatorMarker ? SeparatorTemplate! : HotkeyTemplate!;
+    }
+
+    protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+    {
+        return SelectTemplateCore(item);
+    }
 }
 
 public class HotkeyBindingViewModel : INotifyPropertyChanged

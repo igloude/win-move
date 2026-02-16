@@ -86,6 +86,17 @@ public struct NOTIFYICONDATA
     public IntPtr hBalloonIcon;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct WINDOWPLACEMENT
+{
+    public uint length;
+    public uint flags;
+    public uint showCmd;
+    public POINT ptMinPosition;
+    public POINT ptMaxPosition;
+    public RECT rcNormalPosition;
+}
+
 public delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

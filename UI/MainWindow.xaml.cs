@@ -17,7 +17,7 @@ public sealed partial class MainWindow : Window
 
         // Set window size
         var appWindow = this.AppWindow;
-        appWindow.Resize(new Windows.Graphics.SizeInt32(700, 550));
+        appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 980));
 
         // Set window icon
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Resources", "app.ico");

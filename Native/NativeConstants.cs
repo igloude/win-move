@@ -33,6 +33,7 @@ public static class NativeConstants
     public static readonly IntPtr HWND_MESSAGE = new(-3);
 
     // ShowWindow commands
+    public const int SW_SHOWNORMAL = 1;
     public const int SW_MINIMIZE = 6;
     public const int SW_MAXIMIZE = 3;
     public const int SW_RESTORE = 9;
