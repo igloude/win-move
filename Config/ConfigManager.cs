@@ -119,6 +119,23 @@ public sealed class ConfigManager : IDisposable
                 ["maximize"] = new() { Modifiers = ["Win", "Shift"], Key = "Up", Action = "Maximize" },
                 ["opacity_up"] = new() { Modifiers = ["Win", "Shift"], Key = "Oemplus", Action = "OpacityUp" },
                 ["opacity_down"] = new() { Modifiers = ["Win", "Shift"], Key = "OemMinus", Action = "OpacityDown" },
+            },
+            GesturesEnabled = true,
+            Gestures = new Dictionary<string, GestureBinding>
+            {
+                ["swipe_left"] = new() { Type = "SwipeLeft", Modifiers = ["Win", "Shift"], Action = "SnapLeft",
+                    Parameters = new() { ["MinVelocityPxPerSec"] = 800, ["MinDisplacementPx"] = 80, ["MaxCrossAxisPx"] = 40, ["TimeWindowMs"] = 300 } },
+                ["swipe_right"] = new() { Type = "SwipeRight", Modifiers = ["Win", "Shift"], Action = "SnapRight",
+                    Parameters = new() { ["MinVelocityPxPerSec"] = 800, ["MinDisplacementPx"] = 80, ["MaxCrossAxisPx"] = 40, ["TimeWindowMs"] = 300 } },
+                ["swipe_up"] = new() { Type = "SwipeUp", Modifiers = ["Win", "Shift"], Action = "Maximize",
+                    Parameters = new() { ["MinVelocityPxPerSec"] = 800, ["MinDisplacementPx"] = 80, ["MaxCrossAxisPx"] = 40, ["TimeWindowMs"] = 300 } },
+                ["swipe_down"] = new() { Type = "SwipeDown", Modifiers = ["Win", "Shift"], Action = "ToggleMinimize",
+                    Parameters = new() { ["MinVelocityPxPerSec"] = 800, ["MinDisplacementPx"] = 80, ["MaxCrossAxisPx"] = 40, ["TimeWindowMs"] = 300 } },
+                ["scroll_up"] = new() { Type = "ScrollUp", Modifiers = ["Win", "Shift"], Action = "OpacityUp", Parameters = new() },
+                ["scroll_down"] = new() { Type = "ScrollDown", Modifiers = ["Win", "Shift"], Action = "OpacityDown", Parameters = new() },
+                ["xbutton1"] = new() { Type = "XButton1", Modifiers = ["Win", "Shift"], Action = "MoveDrag", Parameters = new() },
+                ["xbutton2"] = new() { Type = "XButton2", Modifiers = ["Win", "Shift"], Action = "ResizeDrag", Parameters = new() },
+                ["middle_click"] = new() { Type = "MiddleClick", Modifiers = ["Win", "Shift"], Action = "Restore", Parameters = new() },
             }
         };
     }
@@ -277,5 +294,10 @@ public sealed class ConfigManager : IDisposable
             ActionType.ToggleMinimize => "Minimize / Restore",
             _ => action.ToString()
         };
+    }
+
+    public static bool TryParseGestureType(string name, out GestureType gestureType)
+    {
+        return Enum.TryParse(name, ignoreCase: true, out gestureType);
     }
 }
