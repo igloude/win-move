@@ -42,6 +42,13 @@ public sealed class ModifierSession
     public event Action<ActionType>? ActionTriggered;
 
     /// <summary>
+    /// Fired whenever the set of held modifier keys changes.
+    /// Parameter is the current MOD_* bitmask (0 when all modifiers released).
+    /// Used by GestureEngine to arm/disarm gesture detection.
+    /// </summary>
+    public event Action<uint>? ModifierFlagsChanged;
+
+    /// <summary>
     /// Returns true if ActionTriggered fired for the current keypress, then resets the flag.
     /// Used by OnHotkeyAction to avoid double-dispatching when both the keyboard hook
     /// and WM_HOTKEY fire for the same key event (hook is synchronous, WM_HOTKEY is posted).
@@ -123,6 +130,8 @@ public sealed class ModifierSession
                     _sessionSeeded = false;
                 }
             }
+
+            ModifierFlagsChanged?.Invoke(ConvertToModFlags());
         }
         else // Primary key
         {
