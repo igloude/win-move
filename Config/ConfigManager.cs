@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace Tactadile.Config;
 
+public record DisplaySection(string Name, List<string> Keys);
+
 public sealed class ConfigManager : IDisposable
 {
     public static readonly string ConfigDirectory = Path.Combine(
@@ -210,7 +212,8 @@ public sealed class ConfigManager : IDisposable
         _debounceTimer?.Dispose();
     }
 
-    // Canonical display order with section breaks (null = divider)
+    // Canonical display order with section breaks (null = divider).
+    // Keep in sync with DisplaySections below.
     public static readonly List<string?> DisplayOrder =
     [
         "move_drag", "resize_drag",
@@ -230,6 +233,20 @@ public sealed class ConfigManager : IDisposable
         "nudge_up", "nudge_down", "nudge_left", "nudge_right",
         null,
         "nudge_up_large", "nudge_down_large", "nudge_left_large", "nudge_right_large",
+    ];
+
+    // Named sections for UI accordion display. Must match DisplayOrder grouping.
+    public static readonly List<DisplaySection> DisplaySections =
+    [
+        new("Drag", ["move_drag", "resize_drag"]),
+        new("Snap", ["snap_left", "snap_right"]),
+        new("Window State", ["minimize", "toggle_minimize", "restore", "maximize"]),
+        new("Opacity", ["opacity_up", "opacity_down"]),
+        new("Zoom", ["zoom_in", "zoom_out"]),
+        new("Virtual Desktops", ["task_view", "next_virtual_desktop", "prev_virtual_desktop", "minimize_all"]),
+        new("Size & Position", ["resize_window", "center_window", "cascade_windows"]),
+        new("Nudge", ["nudge_up", "nudge_down", "nudge_left", "nudge_right"]),
+        new("Nudge (Large)", ["nudge_up_large", "nudge_down_large", "nudge_left_large", "nudge_right_large"]),
     ];
 
     // Parsing helpers used by HotkeyManager

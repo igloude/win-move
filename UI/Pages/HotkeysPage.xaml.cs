@@ -39,47 +39,52 @@ public sealed partial class HotkeysPage : Page
         if (_configManager == null) return;
 
         SaveButton.IsEnabled = false;
-
         _bindings.Clear();
-        var config = _configManager.CurrentConfig;
+        SectionsPanel.Children.Clear();
 
-        // Build bindings in canonical display order
-        var items = new List<object>();
-        foreach (var entry in ConfigManager.DisplayOrder)
+        var config = _configManager.CurrentConfig;
+        var template = (DataTemplate)Resources["HotkeyItemTemplate"];
+        var knownKeys = new HashSet<string>();
+
+        foreach (var section in ConfigManager.DisplaySections)
         {
-            if (entry == null)
+            var items = new List<HotkeyBindingViewModel>();
+
+            foreach (var key in section.Keys)
             {
-                items.Add(SeparatorMarker.Instance);
-                continue;
+                knownKeys.Add(key);
+                if (!config.Hotkeys.TryGetValue(key, out var binding))
+                    continue;
+                if (!ConfigManager.TryParseAction(binding.Action, out var actionType))
+                    continue;
+
+                var vm = new HotkeyBindingViewModel
+                {
+                    ConfigKey = key,
+                    ActionType = actionType,
+                    FriendlyName = ConfigManager.GetFriendlyConfigKeyName(key, actionType),
+                    IsProOnly = _licenseManager != null && !_licenseManager.IsActionAllowed(actionType),
+                    Binding = new HotkeyBinding
+                    {
+                        Modifiers = new List<string>(binding.Modifiers),
+                        Key = binding.Key,
+                        Action = binding.Action,
+                        Parameters = new Dictionary<string, double>(binding.Parameters)
+                    }
+                };
+                _bindings.Add(vm);
+                items.Add(vm);
             }
 
-            if (!config.Hotkeys.TryGetValue(entry, out var binding))
-                continue;
-            if (!ConfigManager.TryParseAction(binding.Action, out var actionType))
-                continue;
-
-            var vm = new HotkeyBindingViewModel
-            {
-                ConfigKey = entry,
-                ActionType = actionType,
-                FriendlyName = ConfigManager.GetFriendlyConfigKeyName(entry, actionType),
-                IsProOnly = _licenseManager != null && !_licenseManager.IsActionAllowed(actionType),
-                Binding = new HotkeyBinding
-                {
-                    Modifiers = new List<string>(binding.Modifiers),
-                    Key = binding.Key,
-                    Action = binding.Action,
-                    Parameters = new Dictionary<string, double>(binding.Parameters)
-                }
-            };
-            _bindings.Add(vm);
-            items.Add(vm);
+            if (items.Count > 0)
+                SectionsPanel.Children.Add(CreateExpanderForGroup(section.Name, items, template));
         }
 
-        // Append any keys not in DisplayOrder (future-proofing)
+        // Append any keys not in DisplaySections (future-proofing)
+        var ungrouped = new List<HotkeyBindingViewModel>();
         foreach (var (key, binding) in config.Hotkeys)
         {
-            if (_bindings.Any(b => b.ConfigKey == key))
+            if (knownKeys.Contains(key) || _bindings.Any(b => b.ConfigKey == key))
                 continue;
             if (!ConfigManager.TryParseAction(binding.Action, out var actionType))
                 continue;
@@ -99,11 +104,31 @@ public sealed partial class HotkeysPage : Page
                 }
             };
             _bindings.Add(vm);
-            items.Add(vm);
+            ungrouped.Add(vm);
         }
 
-        HotkeyList.ItemsSource = null;
-        HotkeyList.ItemsSource = items;
+        if (ungrouped.Count > 0)
+            SectionsPanel.Children.Add(CreateExpanderForGroup("Other", ungrouped, template));
+    }
+
+    private static Expander CreateExpanderForGroup(string name, List<HotkeyBindingViewModel> items, DataTemplate template)
+    {
+        var expander = new Expander
+        {
+            Header = name,
+            IsExpanded = true,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+        };
+
+        var repeater = new ItemsRepeater
+        {
+            ItemsSource = items,
+            ItemTemplate = template,
+        };
+
+        expander.Content = repeater;
+        return expander;
     }
 
     private async void OnChangeClick(object sender, RoutedEventArgs e)
@@ -418,27 +443,6 @@ public sealed partial class HotkeysPage : Page
         0x12 => "Alt",
         _ => $"0x{vk:X2}"
     };
-}
-
-public class SeparatorMarker
-{
-    public static readonly SeparatorMarker Instance = new();
-}
-
-public class HotkeyListTemplateSelector : DataTemplateSelector
-{
-    public DataTemplate? HotkeyTemplate { get; set; }
-    public DataTemplate? SeparatorTemplate { get; set; }
-
-    protected override DataTemplate SelectTemplateCore(object item)
-    {
-        return item is SeparatorMarker ? SeparatorTemplate! : HotkeyTemplate!;
-    }
-
-    protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
-    {
-        return SelectTemplateCore(item);
-    }
 }
 
 public class HotkeyBindingViewModel : INotifyPropertyChanged
