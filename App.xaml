@@ -3,6 +3,22 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
-        <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <SolidColorBrush x:Key="TierBadgeProBrush" Color="#3B82F6" />
+            <SolidColorBrush x:Key="TierBadgeLifetimeBrush" Color="#A855F7" />
+            <SolidColorBrush x:Key="TierBadgeFreeBrush" Color="#6B7280" />
+            <SolidColorBrush x:Key="StatusErrorBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="StatusSuccessBrush" Color="#22C55E" />
+
+            <SolidColorBrush x:Key="ZoneTileSelectedBorderBrush" Color="#0078D4" />
+            <SolidColorBrush x:Key="ZoneTileUnselectedBorderBrush" Color="#505050" />
+            <SolidColorBrush x:Key="ZoneTileSelectedBackgroundBrush" Color="#1E0078D4" />
+            <SolidColorBrush x:Key="ZoneTilePreviewBrush" Color="#282828" />
+            <SolidColorBrush x:Key="ZoneTileHighlightBrush" Color="#B40078D4" />
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

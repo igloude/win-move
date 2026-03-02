@@ -213,6 +213,8 @@ public sealed class DragHandler : IDisposable
     private static readonly string DebugLogPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Tactadile", "edge-snap-debug.log");
+
+    [System.Diagnostics.Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
         try { File.AppendAllText(DebugLogPath, $"{DateTime.Now:HH:mm:ss.fff} [Drag] {msg}\n"); }

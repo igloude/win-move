@@ -40,9 +40,9 @@ public sealed partial class LicensePage : Page
         };
         TierBadge.Background = tier switch
         {
-            LicenseTier.Pro => new SolidColorBrush(ColorHelper.FromArgb(255, 59, 130, 246)),       // Blue
-            LicenseTier.Lifetime => new SolidColorBrush(ColorHelper.FromArgb(255, 168, 85, 247)),  // Purple
-            _ => new SolidColorBrush(ColorHelper.FromArgb(255, 107, 114, 128))                      // Gray
+            LicenseTier.Pro => (Brush)Application.Current.Resources["TierBadgeProBrush"],
+            LicenseTier.Lifetime => (Brush)Application.Current.Resources["TierBadgeLifetimeBrush"],
+            _ => (Brush)Application.Current.Resources["TierBadgeFreeBrush"]
         };
         TierBadgeText.Foreground = new SolidColorBrush(Colors.White);
 
@@ -107,7 +107,7 @@ public sealed partial class LicensePage : Page
         ActivateButton.IsEnabled = false;
         LicenseKeyInput.IsEnabled = false;
         ActivateProgress.IsActive = true;
-        ActivateStatusText.Visibility = Visibility.Collapsed;
+        ActivateStatusBar.IsOpen = false;
 
         var (success, error) = await _licenseManager.ActivateAsync(key);
 
@@ -165,10 +165,8 @@ public sealed partial class LicensePage : Page
 
     private void ShowActivateStatus(string message, bool isError)
     {
-        ActivateStatusText.Text = message;
-        ActivateStatusText.Foreground = isError
-            ? new SolidColorBrush(ColorHelper.FromArgb(255, 239, 68, 68))    // Red
-            : new SolidColorBrush(ColorHelper.FromArgb(255, 34, 197, 94));   // Green
-        ActivateStatusText.Visibility = Visibility.Visible;
+        ActivateStatusBar.Message = message;
+        ActivateStatusBar.Severity = isError ? InfoBarSeverity.Error : InfoBarSeverity.Success;
+        ActivateStatusBar.IsOpen = true;
     }
 }

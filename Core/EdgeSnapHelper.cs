@@ -15,6 +15,7 @@ public static class EdgeSnapHelper
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Tactadile", "edge-snap-debug.log");
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private static void Log(string msg)
     {
         try { File.AppendAllText(LogPath, $"{DateTime.Now:HH:mm:ss.fff} {msg}\n"); }
