@@ -2,17 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(dotnet:*)",
-      "Bash(dotnet-script -e:*)",
       "Bash(powershell:*)",
-      "Bash(dir:*)",
-      "WebFetch(domain:github.com)",
       "Bash(git checkout:*)",
       "Bash(git mv:*)",
+      "Bash(git branch:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git stash:*)",
       "Bash(wc:*)",
-      "Bash(findstr:*)",
-      "Bash(xargs cat:*)",
-      "Bash(Select-String -Pattern \"error\")",
-      "Bash(Select-String -NotMatch \"MSB3026|MSB3027|MSB3021\")"
+      "WebFetch(domain:github.com)",
+      "Bash(git add CLAUDE.md .editorconfig .claude/settings.local.json plan.md)",
+      "Bash(git commit:*)"
     ]
   }
 }
