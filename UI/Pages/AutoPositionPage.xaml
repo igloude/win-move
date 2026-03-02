@@ -26,14 +26,12 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBox x:Name="SearchBox" PlaceholderText="Search rules..."
+                     AutomationProperties.Name="Search rules"
                      TextChanged="OnSearchChanged" />
             <Button Content="Add Rule" Grid.Column="1" Margin="8,0,0,0"
                     Click="OnAddRule" Style="{StaticResource AccentButtonStyle}" />
-            <Button Content="Capture Current Window" Grid.Column="2" Margin="8,0,0,0"
-                    Click="OnCaptureCurrentWindow" />
         </Grid>
 
         <Grid Grid.Row="3">

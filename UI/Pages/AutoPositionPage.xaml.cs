@@ -198,11 +198,6 @@ public sealed partial class AutoPositionPage : Page
         await ShowAddRuleDialogAsync();
     }
 
-    private async void OnCaptureCurrentWindow(object sender, RoutedEventArgs e)
-    {
-        await ShowAddRuleDialogAsync();
-    }
-
     private async Task ShowAddRuleDialogAsync()
     {
         var apps = ProcessInfoHelper.GetRunningApps();
@@ -348,7 +343,7 @@ public sealed partial class AutoPositionPage : Page
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         var zones = Enum.GetValues<ZoneType>();
-        var tiles = new List<Border>();
+        var tiles = new List<Button>();
 
         for (int i = 0; i < zones.Length; i++)
         {
@@ -363,18 +358,17 @@ public sealed partial class AutoPositionPage : Page
             tiles.Add(tile);
 
             var capturedZone = zone;
-            tile.Tapped += (s, e) =>
+            tile.Click += (s, e) =>
             {
                 result.SelectedZone = capturedZone;
                 foreach (var t in tiles)
                 {
                     bool isSelected = t == tile;
-                    t.BorderBrush = isSelected
-                        ? new SolidColorBrush(ColorHelper.FromArgb(255, 0, 120, 212))
-                        : new SolidColorBrush(ColorHelper.FromArgb(255, 80, 80, 80));
+                    t.BorderBrush = (Brush)Application.Current.Resources[
+                        isSelected ? "ZoneTileSelectedBorderBrush" : "ZoneTileUnselectedBorderBrush"];
                     t.BorderThickness = isSelected ? new Thickness(2) : new Thickness(1);
                     t.Background = isSelected
-                        ? new SolidColorBrush(ColorHelper.FromArgb(30, 0, 120, 212))
+                        ? (Brush)Application.Current.Resources["ZoneTileSelectedBackgroundBrush"]
                         : new SolidColorBrush(Colors.Transparent);
                 }
             };
@@ -384,21 +378,21 @@ public sealed partial class AutoPositionPage : Page
         return result;
     }
 
-    private static Border CreateZoneTile(ZoneType zone, bool isSelected)
+    private static Button CreateZoneTile(ZoneType zone, bool isSelected)
     {
         // Mini preview: 80x50 grid showing the zone region
         var preview = new Grid
         {
             Width = 80,
             Height = 50,
-            Background = new SolidColorBrush(ColorHelper.FromArgb(255, 40, 40, 40)),
+            Background = (Brush)Application.Current.Resources["ZoneTilePreviewBrush"],
             CornerRadius = new CornerRadius(2)
         };
 
         // Add a highlight rectangle for the zone region
         var highlight = new Border
         {
-            Background = new SolidColorBrush(ColorHelper.FromArgb(180, 0, 120, 212)),
+            Background = (Brush)Application.Current.Resources["ZoneTileHighlightBrush"],
             CornerRadius = new CornerRadius(1)
         };
         SetZonePosition(highlight, preview, zone);
@@ -422,24 +416,25 @@ public sealed partial class AutoPositionPage : Page
         content.Children.Add(preview);
         content.Children.Add(label);
 
-        var border = new Border
+        var button = new Button
         {
-            Child = content,
+            Content = content,
             CornerRadius = new CornerRadius(6),
             BorderThickness = isSelected ? new Thickness(2) : new Thickness(1),
-            BorderBrush = isSelected
-                ? new SolidColorBrush(ColorHelper.FromArgb(255, 0, 120, 212))
-                : new SolidColorBrush(ColorHelper.FromArgb(255, 80, 80, 80)),
+            BorderBrush = (Brush)Application.Current.Resources[
+                isSelected ? "ZoneTileSelectedBorderBrush" : "ZoneTileUnselectedBorderBrush"],
             Background = isSelected
-                ? new SolidColorBrush(ColorHelper.FromArgb(30, 0, 120, 212))
+                ? (Brush)Application.Current.Resources["ZoneTileSelectedBackgroundBrush"]
                 : new SolidColorBrush(Colors.Transparent),
-            MinWidth = 100
+            MinWidth = 100,
+            Padding = new Thickness(0),
+            HorizontalContentAlignment = HorizontalAlignment.Center
         };
 
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(
-            border, ZoneCalculator.GetFriendlyName(zone));
+            button, ZoneCalculator.GetFriendlyName(zone));
 
-        return border;
+        return button;
     }
 
     private static void SetZonePosition(Border highlight, Grid container, ZoneType zone)

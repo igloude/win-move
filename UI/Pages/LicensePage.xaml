@@ -34,6 +34,7 @@
             <StackPanel Spacing="8">
                 <TextBlock Text="Activate License" Style="{StaticResource SubtitleTextBlockStyle}" />
                 <TextBox x:Name="LicenseKeyInput" PlaceholderText="Enter your license key"
+                         AutomationProperties.Name="License key"
                          IsEnabled="True" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button x:Name="ActivateButton" Content="Activate"
@@ -41,8 +42,7 @@
                     <ProgressRing x:Name="ActivateProgress" IsActive="False"
                                   Width="20" Height="20" VerticalAlignment="Center" />
                 </StackPanel>
-                <TextBlock x:Name="ActivateStatusText" TextWrapping="Wrap"
-                           Visibility="Collapsed" />
+                <InfoBar x:Name="ActivateStatusBar" IsOpen="False" IsClosable="True" />
             </StackPanel>
 
             <!-- Manage License (visible when activated) -->

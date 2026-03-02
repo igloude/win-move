@@ -26,18 +26,6 @@ public static class SwipeRecognizer
 
         // Find the oldest sample within the time window
         int oldestIdx = -1;
-        for (int i = buffer.Count - 1; i >= 0; i--)
-        {
-            var s = buffer.GetByIndex(i);
-            if (s.TimestampMs >= cutoffMs)
-            {
-                oldestIdx = i;
-                break;
-            }
-        }
-
-        // We want the oldest sample in the window — search from the front
-        oldestIdx = -1;
         for (int i = 0; i < buffer.Count; i++)
         {
             var s = buffer.GetByIndex(i);

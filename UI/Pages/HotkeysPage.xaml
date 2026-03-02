@@ -19,7 +19,7 @@
                         <Border Grid.Column="0" CornerRadius="4" Padding="6,2"
                                 VerticalAlignment="Center"
                                 Visibility="{Binding ProBadgeVisibility}"
-                                Background="#3B82F6">
+                                Background="{StaticResource TierBadgeProBrush}">
                             <TextBlock Text="PRO" FontSize="10" FontWeight="SemiBold"
                                        Foreground="White" />
                         </Border>

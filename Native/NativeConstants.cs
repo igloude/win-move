@@ -139,10 +139,6 @@ public static class NativeConstants
     // OpenProcess
     public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
 
-    // GetWindow
-    public const uint GW_OWNER = 4;
-
-    // Window styles
-    public const int GWL_STYLE = -16;
+    // Window styles (additional)
     public const uint WS_CAPTION = 0x00C00000;
 }
