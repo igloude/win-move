@@ -9,7 +9,7 @@ public sealed class EnumTests
     public void ActionType_HasExpectedCount()
     {
         var values = Enum.GetValues<ActionType>();
-        Assert.Equal(23, values.Length);
+        Assert.Equal(24, values.Length);
     }
 
     [Fact]
@@ -94,6 +94,7 @@ public sealed class EnumTests
         Assert.True(Enum.IsDefined(ActionType.NudgeDown));
         Assert.True(Enum.IsDefined(ActionType.NudgeLeft));
         Assert.True(Enum.IsDefined(ActionType.NudgeRight));
+        Assert.True(Enum.IsDefined(ActionType.SnapToFancyZone));
     }
 
     [Fact]
