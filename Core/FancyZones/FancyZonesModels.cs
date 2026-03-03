@@ -128,3 +128,23 @@ public sealed class FancyZonesLayoutTemplatesFile
     [JsonPropertyName("layout-templates")]
     public List<FancyZonesLayout> LayoutTemplates { get; set; } = new();
 }
+
+// ── Legacy zones-settings.json (older PowerToys versions) ──
+
+public sealed class FancyZonesLegacyFile
+{
+    [JsonPropertyName("devices")]
+    public List<FancyZonesLegacyDevice> Devices { get; set; } = new();
+
+    [JsonPropertyName("custom-zone-sets")]
+    public List<FancyZonesLayout> CustomZoneSets { get; set; } = new();
+}
+
+public sealed class FancyZonesLegacyDevice
+{
+    [JsonPropertyName("device-id")]
+    public string DeviceId { get; set; } = "";
+
+    [JsonPropertyName("active-zoneset")]
+    public FancyZonesLayoutRef ActiveZoneSet { get; set; } = new();
+}

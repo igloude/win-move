@@ -18,6 +18,8 @@ public sealed class FancyZonesLayoutProvider : IDisposable
         Path.Combine(FancyZonesDataDir, "applied-layouts.json");
     private static readonly string LayoutTemplatesPath =
         Path.Combine(FancyZonesDataDir, "layout-templates.json");
+    private static readonly string LegacyZonesSettingsPath =
+        Path.Combine(FancyZonesDataDir, "zones-settings.json");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -139,9 +141,24 @@ public sealed class FancyZonesLayoutProvider : IDisposable
 
     private void LoadAll()
     {
-        var customLayouts = LoadCustomLayouts();
-        var templateLayouts = LoadTemplateLayouts();
-        var appliedLayouts = LoadAppliedLayouts();
+        // Try new split-file format first, fall back to legacy zones-settings.json
+        bool hasNewFormat = File.Exists(CustomLayoutsPath) || File.Exists(LayoutTemplatesPath);
+
+        List<FancyZonesLayout> customLayouts;
+        List<FancyZonesLayout> templateLayouts;
+        List<FancyZonesAppliedLayout> appliedLayouts;
+
+        if (hasNewFormat)
+        {
+            customLayouts = LoadCustomLayouts();
+            templateLayouts = LoadTemplateLayouts();
+            appliedLayouts = LoadAppliedLayouts();
+        }
+        else
+        {
+            (customLayouts, appliedLayouts) = LoadLegacyZonesSettings();
+            templateLayouts = new List<FancyZonesLayout>();
+        }
 
         lock (_lock)
         {
@@ -199,6 +216,46 @@ public sealed class FancyZonesLayoutProvider : IDisposable
         catch
         {
             return new List<FancyZonesAppliedLayout>();
+        }
+    }
+
+    /// <summary>
+    /// Reads the legacy zones-settings.json format used by older PowerToys versions.
+    /// This single file contains both custom zone sets and device→layout mappings.
+    /// </summary>
+    private static (List<FancyZonesLayout> layouts, List<FancyZonesAppliedLayout> applied) LoadLegacyZonesSettings()
+    {
+        if (!File.Exists(LegacyZonesSettingsPath))
+            return (new List<FancyZonesLayout>(), new List<FancyZonesAppliedLayout>());
+
+        try
+        {
+            var json = File.ReadAllText(LegacyZonesSettingsPath);
+            var file = JsonSerializer.Deserialize<FancyZonesLegacyFile>(json, JsonOptions);
+            if (file == null)
+                return (new List<FancyZonesLayout>(), new List<FancyZonesAppliedLayout>());
+
+            var layouts = file.CustomZoneSets ?? new List<FancyZonesLayout>();
+
+            // Convert legacy devices to applied layouts
+            var applied = new List<FancyZonesAppliedLayout>();
+            foreach (var device in file.Devices ?? Enumerable.Empty<FancyZonesLegacyDevice>())
+            {
+                applied.Add(new FancyZonesAppliedLayout
+                {
+                    Device = new FancyZonesDevice
+                    {
+                        MonitorId = device.DeviceId
+                    },
+                    AppliedLayoutRef = device.ActiveZoneSet
+                });
+            }
+
+            return (layouts, applied);
+        }
+        catch
+        {
+            return (new List<FancyZonesLayout>(), new List<FancyZonesAppliedLayout>());
         }
     }
 
