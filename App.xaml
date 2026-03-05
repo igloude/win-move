@@ -19,6 +19,8 @@
             <SolidColorBrush x:Key="ZoneTileSelectedBackgroundBrush" Color="#1E0078D4" />
             <SolidColorBrush x:Key="ZoneTilePreviewBrush" Color="#282828" />
             <SolidColorBrush x:Key="ZoneTileHighlightBrush" Color="#B40078D4" />
+
+            <SolidColorBrush x:Key="AlternatingRowBrush" Color="#10FFFFFF" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
