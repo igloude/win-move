@@ -69,6 +69,7 @@ public sealed partial class AutoPositionPage : Page
         ApplyFilter();
 
         _loading = false;
+        UpdateRulesAreaEnabled();
     }
 
     private void ApplyFilter()
@@ -82,9 +83,11 @@ public sealed partial class AutoPositionPage : Page
         RulesList.ItemsSource = null;
         RulesList.Items.Clear();
 
-        foreach (var vm in filtered)
+        for (int i = 0; i < filtered.Count; i++)
         {
-            var item = BuildRuleRow(vm);
+            var item = BuildRuleRow(filtered[i]);
+            if (i % 2 == 0)
+                item.Background = (Brush)Application.Current.Resources["AlternatingRowBrush"];
             RulesList.Items.Add(item);
         }
 
@@ -94,12 +97,11 @@ public sealed partial class AutoPositionPage : Page
     private Grid BuildRuleRow(LaunchRuleViewModel vm)
     {
         var grid = new Grid { ColumnSpacing = 12, Padding = new Thickness(4, 8, 4, 8) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });   // 0: AppName
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });   // 1: Monitor
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });       // 2: Zone icon
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // 3: spacer
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });       // 4: toggle + buttons
 
         var appName = new TextBlock
         {
@@ -119,14 +121,33 @@ public sealed partial class AutoPositionPage : Page
         Grid.SetColumn(monitorText, 1);
         grid.Children.Add(monitorText);
 
-        var zoneText = new TextBlock
+        // Zone icon (mini preview) or fallback text
+        if (Enum.TryParse<ZoneType>(vm.Zone, out var zoneType))
         {
-            Text = vm.ZoneDisplay,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            var zoneIcon = CreateMiniZoneIcon(zoneType);
+            zoneIcon.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(zoneIcon, 2);
+            grid.Children.Add(zoneIcon);
+        }
+        else
+        {
+            var zoneText = new TextBlock
+            {
+                Text = vm.ZoneDisplay,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            };
+            Grid.SetColumn(zoneText, 2);
+            grid.Children.Add(zoneText);
+        }
+
+        // Actions panel: toggle + edit + delete grouped right
+        var actionsPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            VerticalAlignment = VerticalAlignment.Center
         };
-        Grid.SetColumn(zoneText, 2);
-        grid.Children.Add(zoneText);
 
         var toggle = new ToggleSwitch
         {
@@ -140,10 +161,8 @@ public sealed partial class AutoPositionPage : Page
             vm.Enabled = toggle.IsOn;
             SaveRules();
         };
-        Grid.SetColumn(toggle, 3);
-        grid.Children.Add(toggle);
+        actionsPanel.Children.Add(toggle);
 
-        var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         var editBtn = new Button { Content = "Edit" };
         editBtn.Click += async (s, e) =>
         {
@@ -154,6 +173,8 @@ public sealed partial class AutoPositionPage : Page
                 ApplyFilter();
             }
         };
+        actionsPanel.Children.Add(editBtn);
+
         var deleteBtn = new Button { Content = "Delete" };
         deleteBtn.Click += async (s, e) =>
         {
@@ -172,10 +193,10 @@ public sealed partial class AutoPositionPage : Page
                 ApplyFilter();
             }
         };
-        btnPanel.Children.Add(editBtn);
-        btnPanel.Children.Add(deleteBtn);
-        Grid.SetColumn(btnPanel, 5);
-        grid.Children.Add(btnPanel);
+        actionsPanel.Children.Add(deleteBtn);
+
+        Grid.SetColumn(actionsPanel, 4);
+        grid.Children.Add(actionsPanel);
 
         return grid;
     }
@@ -186,6 +207,16 @@ public sealed partial class AutoPositionPage : Page
         var config = _configManager.CurrentConfig;
         config.AutoPositionEnabled = EnabledToggle.IsOn;
         _configManager.Save(config);
+        UpdateRulesAreaEnabled();
+    }
+
+    private void UpdateRulesAreaEnabled()
+    {
+        bool enabled = EnabledToggle.IsOn;
+        SearchAddRow.IsHitTestVisible = enabled;
+        RulesListArea.IsHitTestVisible = enabled;
+        SearchAddRow.Opacity = enabled ? 1.0 : 0.4;
+        RulesListArea.Opacity = enabled ? 1.0 : 0.4;
     }
 
     private void OnSearchChanged(object sender, TextChangedEventArgs e)
@@ -437,12 +468,38 @@ public sealed partial class AutoPositionPage : Page
         return button;
     }
 
+    private static FrameworkElement CreateMiniZoneIcon(ZoneType zone)
+    {
+        double w = 32, h = 20;
+
+        var preview = new Grid
+        {
+            Width = w,
+            Height = h,
+            Background = (Brush)Application.Current.Resources["ZoneTilePreviewBrush"],
+            CornerRadius = new CornerRadius(2)
+        };
+
+        var highlight = new Border
+        {
+            Background = (Brush)Application.Current.Resources["ZoneTileHighlightBrush"],
+            CornerRadius = new CornerRadius(1)
+        };
+        SetZonePositionScaled(highlight, w, h, zone);
+        preview.Children.Add(highlight);
+
+        ToolTipService.SetToolTip(preview, ZoneCalculator.GetFriendlyName(zone));
+
+        return preview;
+    }
+
     private static void SetZonePosition(Border highlight, Grid container, ZoneType zone)
     {
-        // Position the highlight within the 80x50 preview using margin
-        // Container is 80x50. We simulate zone position with margin.
-        double w = 80, h = 50;
+        SetZonePositionScaled(highlight, 80, 50, zone);
+    }
 
+    private static void SetZonePositionScaled(Border highlight, double w, double h, ZoneType zone)
+    {
         (double x, double y, double zw, double zh) = zone switch
         {
             ZoneType.Centered       => (w / 6, h / 6, w * 2 / 3, h * 2 / 3),
@@ -455,7 +512,7 @@ public sealed partial class AutoPositionPage : Page
             ZoneType.LeftThird      => (0, 0, w / 3, h),
             ZoneType.LeftHalf       => (0, 0, w / 2, h),
             ZoneType.LeftTwoThirds  => (0, 0, w * 2 / 3, h),
-            ZoneType.RightThird    => (w - w / 3, 0, w / 3, h),
+            ZoneType.RightThird     => (w - w / 3, 0, w / 3, h),
             ZoneType.RightHalf      => (w / 2, 0, w / 2, h),
             ZoneType.RightTwoThirds => (w - w * 2 / 3, 0, w * 2 / 3, h),
             _                       => (0, 0, w, h)

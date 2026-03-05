@@ -15,6 +15,8 @@ public sealed partial class HotkeysPage : Page
     private ConfigManager? _configManager;
     private LicenseManager? _licenseManager;
     private List<HotkeyBindingViewModel> _bindings = new();
+    private List<Expander> _expanders = new();
+    private bool _allExpanded = true;
 
     public HotkeysPage()
     {
@@ -34,13 +36,24 @@ public sealed partial class HotkeysPage : Page
         SaveButton.IsEnabled = true;
     }
 
+    private void OnExpandCollapseAll(object sender, RoutedEventArgs e)
+    {
+        _allExpanded = !_allExpanded;
+        foreach (var expander in _expanders)
+            expander.IsExpanded = _allExpanded;
+        ExpandCollapseButton.Content = _allExpanded ? "Collapse All" : "Expand All";
+    }
+
     private void LoadConfig()
     {
         if (_configManager == null) return;
 
         SaveButton.IsEnabled = false;
         _bindings.Clear();
+        _expanders.Clear();
         SectionsPanel.Children.Clear();
+        _allExpanded = true;
+        ExpandCollapseButton.Content = "Collapse All";
 
         var config = _configManager.CurrentConfig;
         var template = (DataTemplate)Resources["HotkeyItemTemplate"];
@@ -77,7 +90,11 @@ public sealed partial class HotkeysPage : Page
             }
 
             if (items.Count > 0)
-                SectionsPanel.Children.Add(CreateExpanderForGroup(section.Name, items, template));
+            {
+                var expander = CreateExpanderForGroup(section.Name, items, template);
+                _expanders.Add(expander);
+                SectionsPanel.Children.Add(expander);
+            }
         }
 
         // Append any keys not in DisplaySections (future-proofing)
@@ -108,7 +125,11 @@ public sealed partial class HotkeysPage : Page
         }
 
         if (ungrouped.Count > 0)
-            SectionsPanel.Children.Add(CreateExpanderForGroup("Other", ungrouped, template));
+        {
+            var expander = CreateExpanderForGroup("Other", ungrouped, template);
+            _expanders.Add(expander);
+            SectionsPanel.Children.Add(expander);
+        }
     }
 
     private static Expander CreateExpanderForGroup(string name, List<HotkeyBindingViewModel> items, DataTemplate template)

@@ -10,19 +10,30 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Auto Positioning" Style="{StaticResource TitleTextBlockStyle}"
-                   Margin="0,0,0,4" />
-
-        <StackPanel Grid.Row="1" Spacing="8" Margin="0,0,0,12">
-            <ToggleSwitch x:Name="EnabledToggle"
-                          Header="Auto-position apps on launch"
+        <!-- Row 0: Title + toggle -->
+        <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Auto Positioning" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Automatically position windows when applications launch"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           FontSize="12" Margin="0,2,0,0" />
+            </StackPanel>
+            <ToggleSwitch x:Name="EnabledToggle" Grid.Column="1"
+                          VerticalAlignment="Center" MinWidth="0"
                           Toggled="OnEnabledToggled" />
+        </Grid>
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,12">
             <InfoBar x:Name="ProBanner" Severity="Warning" IsOpen="False" IsClosable="False"
                      Title="Pro Feature"
                      Message="Auto positioning requires a Pro or Lifetime license." />
         </StackPanel>
 
-        <Grid Grid.Row="2" Margin="0,0,0,8">
+        <Grid x:Name="SearchAddRow" Grid.Row="2" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -34,7 +45,7 @@
                     Click="OnAddRule" Style="{StaticResource AccentButtonStyle}" />
         </Grid>
 
-        <Grid Grid.Row="3">
+        <Grid x:Name="RulesListArea" Grid.Row="3">
             <ListView x:Name="RulesList" SelectionMode="None"
                       IsItemClickEnabled="False">
                 <ListView.ItemContainerStyle>
