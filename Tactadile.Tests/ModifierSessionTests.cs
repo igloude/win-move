@@ -420,4 +420,101 @@ public sealed class ModifierSessionTests
         session.OnKeyStateChanged(0x5A, true);
         Assert.Empty(triggered);
     }
+
+    // Guard rail: key alone must never trigger a modifier+key combo
+
+    [Fact]
+    public void KeyAlone_WithWinKeyComboConfigured_DoesNotTrigger()
+    {
+        var session = new ModifierSession();
+        var config = CreateConfigWithBinding("T", "TaskView", "Win");
+        session.BuildLookup(config);
+
+        var triggered = new List<ActionType>();
+        session.ActionTriggered += a => triggered.Add(a);
+
+        // Press T alone — must NOT trigger TaskView
+        session.OnKeyStateChanged(0x54, true); // VK_T
+        session.OnKeyStateChanged(0x54, false);
+        Assert.Empty(triggered);
+    }
+
+    [Fact]
+    public void KeyAlone_WithMultipleModifierCombos_NeverTriggers()
+    {
+        var session = new ModifierSession();
+        var config = new AppConfig
+        {
+            Hotkeys = new Dictionary<string, HotkeyBinding>
+            {
+                ["a"] = new() { Modifiers = ["Win"], Key = "T", Action = "TaskView" },
+                ["b"] = new() { Modifiers = ["Win", "Shift"], Key = "T", Action = "Minimize" },
+                ["c"] = new() { Modifiers = ["Ctrl", "Alt"], Key = "T", Action = "Maximize" }
+            }
+        };
+        session.BuildLookup(config);
+
+        var triggered = new List<ActionType>();
+        session.ActionTriggered += a => triggered.Add(a);
+
+        // Press T alone — must NOT trigger any of the three bindings
+        session.OnKeyStateChanged(0x54, true);
+        session.OnKeyStateChanged(0x54, false);
+        Assert.Empty(triggered);
+    }
+
+    [Fact]
+    public void FullPressReleaseCycle_LeavesCleanState()
+    {
+        var session = new ModifierSession();
+        var config = CreateConfigWithBinding("T", "TaskView", "Win");
+        session.BuildLookup(config);
+
+        var triggered = new List<ActionType>();
+        session.ActionTriggered += a => triggered.Add(a);
+
+        // Full Win+T press-release cycle
+        session.OnKeyStateChanged(VK_LWIN, true);
+        session.OnKeyStateChanged(0x54, true);
+        Assert.Single(triggered);
+
+        session.OnKeyStateChanged(0x54, false);
+        session.OnKeyStateChanged(VK_LWIN, false);
+
+        triggered.Clear();
+
+        // Now press T alone — must NOT trigger
+        session.OnKeyStateChanged(0x54, true);
+        session.OnKeyStateChanged(0x54, false);
+        Assert.Empty(triggered);
+    }
+
+    [Fact]
+    public void MultipleKeys_WithoutModifiers_NeverTrigger()
+    {
+        var session = new ModifierSession();
+        var config = new AppConfig
+        {
+            Hotkeys = new Dictionary<string, HotkeyBinding>
+            {
+                ["a"] = new() { Modifiers = ["Win"], Key = "A", Action = "MoveDrag" },
+                ["b"] = new() { Modifiers = ["Win"], Key = "B", Action = "ResizeDrag" },
+                ["c"] = new() { Modifiers = ["Win"], Key = "C", Action = "Minimize" }
+            }
+        };
+        session.BuildLookup(config);
+
+        var triggered = new List<ActionType>();
+        session.ActionTriggered += a => triggered.Add(a);
+
+        // Type "abc" without any modifiers
+        session.OnKeyStateChanged(0x41, true);  // A
+        session.OnKeyStateChanged(0x41, false);
+        session.OnKeyStateChanged(0x42, true);  // B
+        session.OnKeyStateChanged(0x42, false);
+        session.OnKeyStateChanged(0x43, true);  // C
+        session.OnKeyStateChanged(0x43, false);
+
+        Assert.Empty(triggered);
+    }
 }

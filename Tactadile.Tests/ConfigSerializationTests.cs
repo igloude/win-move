@@ -157,6 +157,7 @@ public sealed class ConfigSerializationTests
         Assert.False(config.AutoPositionEnabled);
         Assert.False(config.WinKeyDelayEnabled);
         Assert.Equal(250, config.WinKeyDelayMs);
+        Assert.False(config.BlockCopilot);
         Assert.Empty(config.Hotkeys);
         Assert.Empty(config.Gestures);
         Assert.Empty(config.LaunchRules);
@@ -333,6 +334,20 @@ public sealed class ConfigSerializationTests
 
         Assert.True(deserialized.WinKeyDelayEnabled);
         Assert.Equal(500, deserialized.WinKeyDelayMs);
+    }
+
+    [Fact]
+    public void BlockCopilot_RoundTrips()
+    {
+        var config = new AppConfig
+        {
+            BlockCopilot = true
+        };
+
+        var json = JsonSerializer.Serialize(config, JsonOptions);
+        var deserialized = JsonSerializer.Deserialize<AppConfig>(json, JsonOptions)!;
+
+        Assert.True(deserialized.BlockCopilot);
     }
 
     [Fact]

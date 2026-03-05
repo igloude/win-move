@@ -165,14 +165,42 @@ public sealed class KeyboardHook : IDisposable
         return NativeMethods.CallNextHookEx(_hookId, nCode, wParam, lParam);
     }
 
-    private uint ComputeModFlags()
+    internal uint ComputeModFlags()
     {
+        // Validate ref counts against hardware state to recover from missed UP events.
+        // UAC dialogs, lock screen, and Ctrl+Alt+Del run on the secure desktop where
+        // our hook doesn't receive events, leaving ref counts permanently elevated.
+        // This causes phantom modifier flags that suppress unmodified key presses.
+        if (_winCount > 0 && !IsPhysicallyDown(0x5B) && !IsPhysicallyDown(0x5C))
+            _winCount = 0;
+        if (_shiftCount > 0 && !IsPhysicallyDown(0xA0) && !IsPhysicallyDown(0xA1))
+            _shiftCount = 0;
+        if (_ctrlCount > 0 && !IsPhysicallyDown(0xA2) && !IsPhysicallyDown(0xA3))
+            _ctrlCount = 0;
+        if (_altCount > 0 && !IsPhysicallyDown(0xA4) && !IsPhysicallyDown(0xA5))
+            _altCount = 0;
+
         uint flags = 0;
         if (_winCount > 0) flags |= NativeConstants.MOD_WIN;
         if (_shiftCount > 0) flags |= NativeConstants.MOD_SHIFT;
         if (_ctrlCount > 0) flags |= NativeConstants.MOD_CONTROL;
         if (_altCount > 0) flags |= NativeConstants.MOD_ALT;
         return flags;
+    }
+
+    private static bool IsPhysicallyDown(int vk)
+        => (NativeMethods.GetAsyncKeyState(vk) & 0x8000) != 0;
+
+    /// <summary>
+    /// Injects modifier ref counts for testing. In the test environment
+    /// GetAsyncKeyState returns 0, so ComputeModFlags will reset stuck counts.
+    /// </summary>
+    internal void ForceModifierCounts(int win, int shift, int ctrl, int alt)
+    {
+        _winCount = win;
+        _shiftCount = shift;
+        _ctrlCount = ctrl;
+        _altCount = alt;
     }
 
     /// <summary>
